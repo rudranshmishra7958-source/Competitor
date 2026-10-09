@@ -5,6 +5,7 @@ os.environ["DATABASE_URL"] = "sqlite:///./test_exam.db"
 os.environ["EVENT_RATE_PER_SEC"] = "3"
 os.environ["ENDPOINT_GRACE_SECONDS"] = "0"
 os.environ["JWT_SECRET"] = "test-secret-key-at-least-32-bytes-long"
+os.environ["SNAPSHOT_DIR"] = "./test_snapshots"
 
 import pytest
 from fastapi.testclient import TestClient
@@ -140,7 +141,7 @@ def test_policy_log_only_correlation_burst_and_missing_endpoint(client):
         ).status_code == 200
     admin = login(client, "FAC001", role="admin")
     risk = client.get("/sessions/session-1/risk", headers=auth(admin)).json()
-    assert risk["ruleVersion"].startswith("risk-v2")
+    assert risk["ruleVersion"].startswith("risk-v3")
     assert risk["why"]["allowButLog"][0]["type"] == "clipboard_copy"
     assert risk["why"]["endpointMissing"] is True
     assert all(item["type"] != "clipboard_copy" for item in risk["why"]["scored"])
@@ -282,3 +283,100 @@ def test_students_cannot_simulate(client):
         "/admin/demo/simulate", json={"scenario": "clean"}, headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code in {401, 403}
+
+
+# ---------- Webcam proctoring ----------
+
+def jpeg_bytes(size=(64, 48)):
+    import io as _io
+
+    from PIL import Image
+
+    buffer = _io.BytesIO()
+    Image.new("RGB", size, (20, 30, 40)).save(buffer, format="JPEG")
+    return buffer.getvalue()
+
+
+def upload(client, token, session_id="session-1", data=None, kind="incident", event_type="face_absent"):
+    return client.post(
+        f"/sessions/{session_id}/snapshots?kind={kind}&eventType={event_type}",
+        headers={**auth(token), "Content-Type": "image/jpeg"},
+        content=data if data is not None else jpeg_bytes(),
+    )
+
+
+def test_snapshot_upload_validation_and_admin_only_access(client):
+    student = login(client)
+    register(client, student)
+    ok = upload(client, student)
+    assert ok.status_code == 201
+    snapshot_id = ok.json()["id"]
+    assert upload(client, student, data=b"not a jpeg").status_code == 415
+    assert upload(client, student, data=b"\xff\xd8\xff" + b"0" * 400_000).status_code == 413
+    other = login(client, "STU002")
+    assert upload(client, other).status_code == 403
+    assert client.get(f"/admin/snapshots/{snapshot_id}", headers=auth(student)).status_code == 403
+    admin = login(client, "FAC001", role="admin")
+    listing = client.get("/admin/sessions/session-1/snapshots", headers=auth(admin)).json()
+    assert [row["id"] for row in listing] == [snapshot_id]
+    image = client.get(f"/admin/snapshots/{snapshot_id}", headers=auth(admin))
+    assert image.status_code == 200 and image.content.startswith(b"\xff\xd8\xff")
+
+
+def test_snapshot_upload_rejected_after_submit(client):
+    student = login(client)
+    register(client, student)
+    assert client.post("/sessions/session-1/submit", headers=auth(student)).status_code in {200, 204}
+    assert upload(client, student).status_code == 409
+
+
+def test_face_absent_points_grow_with_duration():
+    from app.risk import event_points
+
+    assert event_points("face_absent", {"durationMs": 6000}) == 2
+    assert event_points("face_absent", {"durationMs": 26000}) == 4
+    assert event_points("face_absent", {"durationMs": 600000}) == 5
+
+
+def test_webcam_simulation_prioritises_corroborated_incidents(client):
+    admin = login(client, "FAC001", role="admin")
+    created = client.post(
+        "/admin/demo/simulate", json={"scenario": "webcam_violations"}, headers=auth(admin)
+    )
+    assert created.status_code == 201
+    session_id = created.json()["sessionId"]
+    assert created.json()["priority"]["level"] in {"high", "critical"}
+    report = client.get(f"/admin/reports/{session_id}", headers=auth(admin)).json()
+    incidents = report["incidents"]
+    priorities = [item["priority"] for item in incidents]
+    assert priorities == sorted(priorities, reverse=True)
+    assert incidents[0]["corroboratedBy"]
+    assert any(item["snapshotIds"] for item in incidents)
+    assert report["priority"]["webcam"] is True
+    assert report["priority"]["evidenceStrength"] in {"strong", "moderate"}
+    assert {snap["kind"] for snap in report["snapshots"]} >= {"reference", "periodic", "incident"}
+    pdf = client.get(f"/admin/reports/{session_id}/export.pdf", headers=auth(admin))
+    assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
+    assert b"/Image" in pdf.content or b"/XObject" in pdf.content
+    from app.db import SessionLocal
+    from app.models import SessionSnapshot
+
+    with SessionLocal() as db:
+        paths = [row.path for row in db.query(SessionSnapshot).filter_by(session_id=session_id)]
+    assert paths and all(os.path.exists(path) for path in paths)
+    assert client.delete("/admin/demo/simulate", headers=auth(admin)).status_code == 204
+    assert not any(os.path.exists(path) for path in paths)
+
+
+def test_purge_removes_expired_snapshots(client):
+    from app.db import SessionLocal
+    from app.proctoring import purge_expired_snapshots, store_snapshot
+
+    with SessionLocal() as db:
+        old = store_snapshot(db, "old-session", "u-stu-1", jpeg_bytes(), "periodic",
+                             created_at=utcnow() - timedelta(days=400))
+        fresh = store_snapshot(db, "new-session", "u-stu-1", jpeg_bytes(), "periodic")
+        old_path, fresh_path = old.path, fresh.path
+        assert purge_expired_snapshots(db) == 1
+    assert not os.path.exists(old_path)
+    assert os.path.exists(fresh_path)

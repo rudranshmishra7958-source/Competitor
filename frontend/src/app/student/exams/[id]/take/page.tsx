@@ -7,6 +7,7 @@ import type { Attempt, AutoGradedQuestion, Exam } from "@exam/shared";
 import { BrowserMonitor } from "@/components/BrowserMonitor";
 import { AgentSetup } from "@/components/AgentSetup";
 import { IntegrityViolationAlert } from "@/components/IntegrityViolationAlert";
+import { ProctorCamera, type CameraStatus } from "@/components/proctor/ProctorCamera";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -48,6 +49,7 @@ export default function TakeExamPage() {
   const [studentId, setStudentId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [agentReady, setAgentReady] = useState(true);
+  const [cameraStatus, setCameraStatus] = useState<CameraStatus>("starting");
   const [eventCount, setEventCount] = useState(0);
   const autoSubmitted = useRef(false);
   const integrity = useSessionIntegrityAlerts(attempt?.id ?? null);
@@ -150,6 +152,7 @@ export default function TakeExamPage() {
     saveTextAnswer(attempt.id, questionId, text);
   }
 
+  const canAnswer = agentReady && (!exam.policy.webcam?.required || cameraStatus === "live");
   const answered = questions.filter((q) => selected[q.id]?.trim()).length;
   const progress = questions.length ? Math.round((answered / questions.length) * 100) : 0;
   const lowTime = remainingMs > 0 && remainingMs < 5 * 60 * 1000;
@@ -167,6 +170,16 @@ export default function TakeExamPage() {
           policy={exam.policy}
           onCount={setEventCount}
           onViolation={integrity.reportViolation}
+        />
+      ) : null}
+      {studentId && exam.policy.webcam?.required ? (
+        <ProctorCamera
+          sessionId={attempt.id}
+          examId={exam.id}
+          studentId={studentId}
+          policy={exam.policy.webcam}
+          onIncident={integrity.reportViolation}
+          onStatus={setCameraStatus}
         />
       ) : null}
 
@@ -253,6 +266,16 @@ export default function TakeExamPage() {
         <p className="mt-4 text-sm text-[var(--muted)]">Written prompts come after these questions.</p>
       ) : null}
 
+      {exam.policy.webcam?.required && cameraStatus !== "live" ? (
+        <p
+          role="alert"
+          className="mt-4 rounded-xl bg-[var(--risk-medium-bg)] px-4 py-3 text-sm text-[var(--risk-medium-fg)]"
+        >
+          {cameraStatus === "starting"
+            ? "Starting your camera. Answers unlock once it is on."
+            : "This exam requires your webcam. Allow the camera in the address bar to continue; answers are locked until then."}
+        </p>
+      ) : null}
       <ol className="mt-6 space-y-4">
         {questions.map((q, i) => (
           <Card as="li" key={q.id} id={`q-${q.id}`} className="scroll-mt-48 sm:p-6">
@@ -272,7 +295,7 @@ export default function TakeExamPage() {
                   spellCheck={false}
                   value={selected[q.id] ?? ""}
                   onChange={(e) => typeAnswer(q.id, e.target.value)}
-                  disabled={!agentReady}
+                  disabled={!canAnswer}
                   className="mt-1.5 min-h-12 w-full rounded-xl border border-[var(--border)] px-4 text-base"
                 />
               </label>
@@ -287,7 +310,7 @@ export default function TakeExamPage() {
                         on
                           ? "border-[var(--accent)] bg-[var(--nav-active-bg)]"
                           : "border-[var(--border)] hover:border-[var(--accent)]"
-                      } ${agentReady ? "" : "cursor-not-allowed opacity-60"}`}
+                      } ${canAnswer ? "" : "cursor-not-allowed opacity-60"}`}
                     >
                       <input
                         type="radio"
@@ -295,7 +318,7 @@ export default function TakeExamPage() {
                         className="mt-1 size-4"
                         checked={on}
                         onChange={() => pick(q.id, opt.id)}
-                        disabled={!agentReady}
+                        disabled={!canAnswer}
                       />
                       <span className="flex-1">{opt.text}</span>
                       {on ? (
@@ -312,7 +335,7 @@ export default function TakeExamPage() {
       </ol>
 
       <div className="mt-6 flex justify-end">
-        <Button size="lg" onClick={() => setConfirming(true)} disabled={!agentReady}>
+        <Button size="lg" onClick={() => setConfirming(true)} disabled={!canAnswer}>
           Submit
         </Button>
       </div>

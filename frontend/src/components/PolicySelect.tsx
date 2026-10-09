@@ -2,7 +2,15 @@
 
 import type { PolicyMode } from "@exam/shared";
 
-const POLICIES: { key: Exclude<keyof import("@exam/shared").ExamSecurityPolicy, "requireEndpointAgent" | "cameraOptional" | "randomizeQuestionOrder" | "randomizeOptionOrder">; label: string }[] = [
+type BrowserPolicyKey =
+  | "fullscreen"
+  | "tabSwitch"
+  | "clipboard"
+  | "externalApp"
+  | "externalSearch"
+  | "multiWindow";
+
+const POLICIES: { key: BrowserPolicyKey; label: string }[] = [
   { key: "fullscreen", label: "Fullscreen" },
   { key: "tabSwitch", label: "Tab switch" },
   { key: "clipboard", label: "Clipboard" },

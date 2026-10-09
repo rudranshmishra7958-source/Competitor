@@ -2,14 +2,15 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Eye, Maximize, PlayCircle, ShieldCheck, Server, EyeOff } from "lucide-react";
+import { Eye, Maximize, PlayCircle, ShieldCheck, Server, EyeOff, Video } from "lucide-react";
+import { FramingCheck } from "@/components/proctor/FramingCheck";
 import type { Exam } from "@exam/shared";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { examStatus, getAttempt, getExam, isAssigned, questionsForExam, startAttempt } from "@/lib/exam-store";
 import { readClientSession } from "@/lib/session";
-import { registerExamSession } from "@/lib/api";
+import { registerExamSession, uploadSnapshot } from "@/lib/api";
 
 export default function PrecheckPage() {
   const params = useParams<{ id: string }>();
@@ -19,6 +20,9 @@ export default function PrecheckPage() {
   const [fullscreenOk, setFullscreenOk] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [framed, setFramed] = useState(false);
+  const [reference, setReference] = useState<Blob | null>(null);
 
   useEffect(() => {
     const found = getExam(params.id) ?? null;
@@ -57,9 +61,16 @@ export default function PrecheckPage() {
     }
   }
 
+  const webcam = exam.policy.webcam?.required ? exam.policy.webcam : null;
+  const cameraReady = !webcam || (consent && framed);
+
   async function start() {
     const currentExam = exam;
     if (!currentExam) return;
+    if (!cameraReady) {
+      setError("Complete the camera check before starting.");
+      return;
+    }
     const session = readClientSession();
     if (!session) {
       router.push("/login/student");
@@ -95,6 +106,8 @@ export default function PrecheckPage() {
     });
     if (!registered) {
       setError("Server registration is unavailable. Continuing in local, lower-assurance mode.");
+    } else if (webcam && reference) {
+      await uploadSnapshot(attempt.id, reference, "reference");
     }
     if (mcqCount + shortCount === 0) {
       router.push(`/student/exams/${currentExam.id}/written`);
@@ -107,12 +120,16 @@ export default function PrecheckPage() {
     {
       title: "What is recorded",
       Icon: Eye,
-      body: "Tab leave, focus, fullscreen, clipboard actions (not the text), and a DevTools signal. If you connect the agent: program name, display count, and network state.",
+      body: webcam
+        ? "Tab leave, focus, fullscreen, clipboard actions (not the text), and a DevTools signal. Your faculty enabled webcam proctoring: the camera is analysed on this device and still snapshots are kept."
+        : "Tab leave, focus, fullscreen, clipboard actions (not the text), and a DevTools signal. If you connect the agent: program name, display count, and network state.",
     },
     {
       title: "What is refused",
       Icon: EyeOff,
-      body: "No face, voice, keystrokes, window titles, URLs, screenshots, or files. A second phone is out of scope.",
+      body: webcam
+        ? "No video recording, no audio, keystrokes, window titles, URLs, or files. The camera turns off when you submit."
+        : "No face, voice, keystrokes, window titles, URLs, screenshots, or files. A second phone is out of scope.",
     },
     {
       title: "Server session",
@@ -146,6 +163,48 @@ export default function PrecheckPage() {
             </div>
           </Card>
         ))}
+        {webcam ? (
+          <Card as="li" className="flex flex-col gap-4">
+            <div className="flex gap-4">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--risk-medium-bg)] text-[var(--risk-medium-fg)]">
+                <Video className="size-5" aria-hidden />
+              </span>
+              <div className="text-sm">
+                <p className="font-semibold">Webcam proctoring is required for this exam</p>
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-[var(--muted)]">
+                  <li>Your camera stays on and you see your own preview in the top-right corner.</li>
+                  <li>
+                    It checks on this device for: leaving your seat for more than {webcam.awaySeconds}{" "}
+                    seconds{webcam.detectSecondPerson ? ", another person" : ""}
+                    {webcam.detectDevices ? ", a phone or second device" : ""}, and a covered camera.
+                  </li>
+                  <li>
+                    You will see a message each time something is flagged. Snapshots are kept every{" "}
+                    {webcam.periodicSnapshotSeconds} s and at each flag. No video is recorded.
+                  </li>
+                  <li>Snapshots are viewed only by faculty reviewers and deleted after the retention period.</li>
+                </ul>
+                <label className="mt-3 flex items-start gap-2 font-medium">
+                  <input
+                    type="checkbox"
+                    className="mt-1 size-4"
+                    checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                  />
+                  I understand and agree to webcam proctoring for this exam.
+                </label>
+              </div>
+            </div>
+            {consent ? (
+              <FramingCheck
+                onReady={(blob) => {
+                  setReference(blob);
+                  setFramed(true);
+                }}
+              />
+            ) : null}
+          </Card>
+        ) : null}
         <Card as="li" className="flex gap-4">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]">
             <Maximize className="size-5" aria-hidden />
@@ -171,7 +230,7 @@ export default function PrecheckPage() {
           {error}
         </p>
       ) : null}
-      <Button size="lg" className="mt-6 w-full sm:w-auto" onClick={start}>
+      <Button size="lg" className="mt-6 w-full sm:w-auto" onClick={start} disabled={!cameraReady}>
         <PlayCircle className="size-5" aria-hidden />
         Start exam
       </Button>

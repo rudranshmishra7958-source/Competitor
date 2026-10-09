@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, CircleCheck, CircleCheckBig, CircleX, Hourglass, ScanLine } from "lucide-react";
+import { ArrowRight, CircleCheck, CircleCheckBig, CircleX, Hourglass, ScanLine, VideoOff } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
@@ -56,12 +56,14 @@ export default function SubmittedPage() {
   const [scans, setScans] = useState<WrittenSubmission[]>([]);
   const [hasWritten, setHasWritten] = useState(false);
   const [result, setResult] = useState<AttemptResult | null>(null);
+  const [webcam, setWebcam] = useState(false);
 
   useEffect(() => {
     const exam = getExam(params.id);
     const session = readClientSession();
     if (exam) {
       setTitle(exam.title);
+      setWebcam(Boolean(exam.policy.webcam?.required));
       setHasWritten(questionsForExam(exam).some((q) => q.kind === "written"));
     }
     if (exam && session) {
@@ -105,6 +107,12 @@ export default function SubmittedPage() {
           ) : null}
           {scans.length ? (
             <p className="mt-1 text-[var(--muted)]">{scans.length} written scan(s) kept in your history.</p>
+          ) : null}
+          {webcam ? (
+            <p className="mt-2 inline-flex items-center gap-1.5 text-[var(--muted)]">
+              <VideoOff className="size-4" aria-hidden />
+              Camera is off. No video was recorded; only the snapshots taken during the exam are kept for review.
+            </p>
           ) : null}
         </div>
       </Card>

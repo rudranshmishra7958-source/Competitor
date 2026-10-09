@@ -10,6 +10,9 @@ import type {
 import { EventTimelineList } from "@/components/EventTimelineList";
 import { PageHeader } from "@/components/PageHeader";
 import { RiskChip } from "@/components/RiskChip";
+import { PriorityPanel } from "@/components/proctor/ReviewEvidence";
+import { ButtonLink } from "@/components/ui/Button";
+import { FileSearch } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -60,6 +63,15 @@ export default function SessionTimelinePage() {
         title={`${session.displayName} · session review`}
         description={`Exam ${session.examId}. Events are chronological and privacy-limited.`}
       />
+      {session.priority ? (
+        <div className="mb-4 space-y-3">
+          <PriorityPanel priority={session.priority} />
+          <ButtonLink href={`/admin/reports/${encodeURIComponent(session.sessionId)}`} variant="secondary" size="sm">
+            <FileSearch className="size-4" aria-hidden />
+            Open evidence report (ranked incidents and snapshots)
+          </ButtonLink>
+        </div>
+      ) : null}
       <div className="grid gap-4 sm:grid-cols-4">
         <Summary label="Risk">
           <RiskChip level={session.risk} />

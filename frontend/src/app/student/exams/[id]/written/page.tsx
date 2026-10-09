@@ -11,6 +11,7 @@ import { WrittenCapture } from "@/components/WrittenCapture";
 import { BrowserMonitor } from "@/components/BrowserMonitor";
 import { AgentSetup } from "@/components/AgentSetup";
 import { IntegrityViolationAlert } from "@/components/IntegrityViolationAlert";
+import { ProctorCamera, type CameraStatus } from "@/components/proctor/ProctorCamera";
 import {
   examStatus,
   getAttempt,
@@ -32,6 +33,7 @@ export default function WrittenExamPage() {
   const [studentId, setStudentId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<WrittenQuestion[]>([]);
   const integrity = useSessionIntegrityAlerts(attempt?.id ?? null);
+  const [cameraStatus, setCameraStatus] = useState<CameraStatus>("starting");
 
   useEffect(() => {
     const session = readClientSession();
@@ -67,6 +69,7 @@ export default function WrittenExamPage() {
 
   const remaining = Date.parse(attempt.expiresAt) - Date.now();
   const open = remaining > 0;
+  const cameraLocked = Boolean(exam.policy.webcam?.required) && open && cameraStatus !== "live";
 
   return (
     <div className="exam-room rise rounded-3xl p-4 sm:p-6">
@@ -80,6 +83,16 @@ export default function WrittenExamPage() {
         policy={exam.policy}
         onViolation={integrity.reportViolation}
       />
+      {open && exam.policy.webcam?.required ? (
+        <ProctorCamera
+          sessionId={attempt.id}
+          examId={exam.id}
+          studentId={studentId}
+          policy={exam.policy.webcam}
+          onIncident={integrity.reportViolation}
+          onStatus={setCameraStatus}
+        />
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Badge tone="low" icon={<Radio className="size-3.5" aria-hidden />}>
@@ -100,6 +113,16 @@ export default function WrittenExamPage() {
           connected={integrity.endpointConnected}
         />
       </div>
+      {cameraLocked ? (
+        <p
+          role="alert"
+          className="mt-4 rounded-xl bg-[var(--risk-medium-bg)] px-4 py-3 text-sm text-[var(--risk-medium-fg)]"
+        >
+          {cameraStatus === "starting"
+            ? "Starting your camera. Answers unlock once it is on."
+            : "This exam requires your webcam. Allow the camera in the address bar to continue; answers are locked until then."}
+        </p>
+      ) : null}
       <p className="mb-4 mt-4 text-sm text-[var(--muted)]">
         Each photo is stored as a new submission. Admins see the full history, not a replacement.
       </p>
@@ -111,7 +134,7 @@ export default function WrittenExamPage() {
             studentId={studentId}
             sessionId={attempt.id}
             question={q}
-            disabled={!open}
+            disabled={!open || cameraLocked}
           />
         ))}
       </div>

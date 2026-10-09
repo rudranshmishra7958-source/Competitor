@@ -8,6 +8,7 @@ import type {
   Question,
   ShortAnswerQuestion,
   WrittenQuestion,
+  WebcamPolicy,
   WrittenSubmission,
 } from "@exam/shared";
 import { MOCK_USERS } from "@/lib/session";
@@ -20,6 +21,14 @@ export type ExamStoreData = {
   attempts: Attempt[];
   answers: Answer[];
   submissions: WrittenSubmission[];
+};
+
+export const DEFAULT_WEBCAM_POLICY: WebcamPolicy = {
+  required: true,
+  awaySeconds: 5,
+  detectSecondPerson: true,
+  detectDevices: true,
+  periodicSnapshotSeconds: 60,
 };
 
 export const DEFAULT_POLICY: ExamSecurityPolicy = {
@@ -505,6 +514,11 @@ function extraDemoExams(
   const closed: Question[] = [
     mcq("q-demo-intro-1", "Which keyword defines a function in Python?", ["func", "def", "lambda only", "fn"], 1),
   ];
+  const webcamQuiz: Question[] = [
+    mcq("q-demo-cam-1", "Which layer of the OSI model handles routing?", ["Data link", "Network", "Transport", "Session"], 1),
+    mcq("q-demo-cam-2", "HTTP status 404 means:", ["Server error", "Moved permanently", "Not found", "Unauthorized"], 2),
+    short("q-demo-cam-3", "What port does HTTPS use by default?", ["443"], {}),
+  ];
   const tomorrow = new Date(Date.now() + 24 * 60 * 60_000);
   tomorrow.setMinutes(0, 0, 0);
   const lastWeek = new Date(Date.now() - 6 * 24 * 60 * 60_000).toISOString();
@@ -551,6 +565,16 @@ function extraDemoExams(
         durationMinutes: 15,
         policy: allowAll,
       }),
+      make("ex-demo-webcam", "Webcam-proctored quiz (camera required)", "mcq", webcamQuiz, {
+        durationMinutes: 20,
+        policy: {
+          ...demoPolicy,
+          webcam: { ...DEFAULT_WEBCAM_POLICY },
+          cameraPresence: "enforce",
+          cameraPeople: "enforce",
+          cameraDevice: "enforce",
+        },
+      }),
       make("ex-demo-arch-final", "Computer architecture final (opens tomorrow)", "mcq", archFinal, {
         startsAt: tomorrow.toISOString(),
         durationMinutes: 120,
@@ -560,7 +584,16 @@ function extraDemoExams(
         durationMinutes: 60,
       }),
     ],
-    questions: [...dbms, ...aptitude, ...ethics, ...python, ...practice, ...archFinal, ...closed],
+    questions: [
+      ...dbms,
+      ...aptitude,
+      ...ethics,
+      ...python,
+      ...practice,
+      ...webcamQuiz,
+      ...archFinal,
+      ...closed,
+    ],
   };
 }
 
@@ -576,6 +609,7 @@ const DEMO_EXAM_IDS = new Set([
   "ex-demo-truefalse",
   "ex-demo-python",
   "ex-demo-practice",
+  "ex-demo-webcam",
 ]);
 
 /** Demo exams that should always look scheduled (not yet open). */

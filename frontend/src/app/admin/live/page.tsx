@@ -26,6 +26,7 @@ import {
   simulateSession,
   type SimulationScenario,
 } from "@/lib/api";
+import { PriorityBadge, SnapshotImage } from "@/components/proctor/ReviewEvidence";
 import { eventLabelForAdmin } from "@/lib/event-labels";
 import { getExam } from "@/lib/exam-store";
 import type { LiveSessionRow, RiskLevel } from "@exam/shared";
@@ -39,6 +40,7 @@ const SCENARIOS: { value: SimulationScenario; label: string }[] = [
   { value: "tab_hopper", label: "Tab hopper (leaves the exam tab)" },
   { value: "copy_paste", label: "Copy / paste activity" },
   { value: "app_switcher", label: "Prohibited apps + second display" },
+  { value: "webcam_violations", label: "Webcam: away, phone, second person" },
   { value: "clean", label: "Clean session" },
 ];
 
@@ -156,6 +158,7 @@ export default function LiveMonitoringPage() {
     .slice()
     .sort(
       (a, b) =>
+        (b.priority?.score ?? 0) - (a.priority?.score ?? 0) ||
         RISK_ORDER[a.risk] - RISK_ORDER[b.risk] ||
         b.breakdown.total - a.breakdown.total ||
         a.displayName.localeCompare(b.displayName),
@@ -180,7 +183,7 @@ export default function LiveMonitoringPage() {
     <>
       <PageHeader
         title="Live monitoring"
-        description="Sessions are sorted by risk. Open one to see its timeline and mark Flagged or Cleared."
+        description="Sessions are sorted by review priority. Open one to see its evidence and mark Flagged or Cleared."
         actions={
           <div className="glass inline-flex rounded-xl p-0.5" role="group" aria-label="View">
             <button
@@ -347,6 +350,21 @@ export default function LiveMonitoringPage() {
                 </div>
                 <RiskChip level={row.risk} />
               </div>
+              {row.latestSnapshotId ? (
+                <SnapshotImage
+                  id={row.latestSnapshotId}
+                  alt={`Latest camera snapshot of ${row.displayName}`}
+                  className="aspect-[4/3] w-full rounded-xl"
+                />
+              ) : null}
+              {row.priority ? (
+                <div className="space-y-1">
+                  <PriorityBadge priority={row.priority} />
+                  {row.priority.reasons[0] ? (
+                    <p className="text-xs text-[var(--muted)]">{row.priority.reasons[0]}</p>
+                  ) : null}
+                </div>
+              ) : null}
               <dl className="grid grid-cols-3 gap-2 text-center text-xs">
                 {(
                   [
@@ -397,7 +415,7 @@ export default function LiveMonitoringPage() {
               <th scope="col" className={th}>Student</th>
               <th scope="col" className={th}>Exam</th>
               <th scope="col" className={th}>Risk</th>
-              <th scope="col" className={th}>Score</th>
+              <th scope="col" className={th}>Priority</th>
               <th scope="col" className={th}>Agent</th>
               <th scope="col" className={th}>Last event</th>
               <th scope="col" className={th}>Timeline</th>
@@ -414,7 +432,9 @@ export default function LiveMonitoringPage() {
                 <td className={td}>
                   <RiskChip level={row.risk} />
                 </td>
-                <td className={`${td} tabular-nums`}>{row.breakdown.total}</td>
+                <td className={td}>
+                  {row.priority ? <PriorityBadge priority={row.priority} /> : row.breakdown.total}
+                </td>
                 <td className={td}>
                   <Badge tone={row.endpointConnected ? "low" : "neutral"}>
                     {row.endpointConnected ? "Connected" : "Not connected"}

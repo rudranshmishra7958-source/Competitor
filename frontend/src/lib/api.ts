@@ -145,6 +145,9 @@ function asLiveRow(value: unknown): LiveSessionRow {
     endpoint?: number;
     correlated?: number;
     score?: number;
+    priority?: LiveSessionRow["priority"];
+    latestSnapshotId?: number | null;
+    topIncident?: LiveSessionRow["topIncident"];
   };
   const riskValue = row.risk;
   const risk =
@@ -167,6 +170,9 @@ function asLiveRow(value: unknown): LiveSessionRow {
       correlated: row.correlated ?? 0,
       total: row.score ?? 0,
     },
+    priority: row.priority,
+    latestSnapshotId: row.latestSnapshotId ?? null,
+    topIncident: row.topIncident ?? null,
   };
 }
 
@@ -183,6 +189,7 @@ function asReportSummary(value: unknown): IntegrityReportSummary {
     assurance?: LiveSessionRow["assurance"];
     updatedAt?: string;
     risk?: IntegrityReportSummary["risk"] | { risk?: IntegrityReportSummary["risk"] };
+    priority?: IntegrityReportSummary["priority"];
   };
   const riskValue = row.risk;
   return {
@@ -195,6 +202,7 @@ function asReportSummary(value: unknown): IntegrityReportSummary {
     reviewStatus: row.reviewStatus ?? row.review?.status ?? "unreviewed",
     summary: row.summary ?? row.integritySummary ?? "",
     updatedAt: row.updatedAt ?? "",
+    priority: row.priority,
   };
 }
 
@@ -217,6 +225,9 @@ function asReport(value: unknown): IntegrityReport {
     events: (row.events ?? []).map(asTimelineEvent),
     review: asReview(row.review),
     submissionCount: row.submissionCount ?? 0,
+    incidents: row.incidents ?? [],
+    snapshots: row.snapshots ?? [],
+    ruleVersion: row.ruleVersion,
   };
 }
 
@@ -308,7 +319,44 @@ export async function fetchLiveBoard(): Promise<LiveSessionRow[] | null> {
   }
 }
 
-export type SimulationScenario = "clean" | "tab_hopper" | "copy_paste" | "app_switcher";
+export type SimulationScenario =
+  | "clean"
+  | "tab_hopper"
+  | "copy_paste"
+  | "app_switcher"
+  | "webcam_violations";
+
+/** Uploads one webcam still (JPEG). Video is never uploaded. Returns the snapshot id. */
+export async function uploadSnapshot(
+  sessionId: string,
+  image: Blob,
+  kind: "reference" | "periodic" | "incident",
+  eventType?: string,
+): Promise<number | null> {
+  try {
+    const query = new URLSearchParams({ kind });
+    if (eventType) query.set("eventType", eventType);
+    const res = await apiRequest(
+      `/sessions/${encodeURIComponent(sessionId)}/snapshots?${query.toString()}`,
+      { method: "POST", headers: { "Content-Type": "image/jpeg" }, body: image },
+    );
+    if (!res.ok) return null;
+    return ((await res.json()) as { id: number }).id;
+  } catch {
+    return null;
+  }
+}
+
+/** Snapshots need the admin bearer token, so they are fetched as blobs for <img>. */
+export async function snapshotObjectUrl(snapshotId: number): Promise<string | null> {
+  try {
+    const res = await apiRequest(`/admin/snapshots/${snapshotId}`);
+    if (!res.ok) return null;
+    return URL.createObjectURL(await res.blob());
+  } catch {
+    return null;
+  }
+}
 
 /** Demo helper: the API creates a scripted session for a spare demo student. */
 export async function simulateSession(

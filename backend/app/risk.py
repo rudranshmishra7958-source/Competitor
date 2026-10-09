@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models import ExamSession, MonitorEventRow, RiskSnapshot, User
 
-RULE_VERSION = "risk-v2.0"
+RULE_VERSION = "risk-v3.0"
 POLICY_EVENT_MAP = {
     "visibility_hidden": "tabSwitch",
     "window_blur": "multiWindow",
@@ -23,6 +23,30 @@ POLICY_EVENT_MAP = {
     "multiple_displays": "multiWindow",
     "display_state_changed": "multiWindow",
     "virtual_machine": "externalApp",
+    # Webcam proctoring (only emitted when the exam enables it).
+    "face_absent": "cameraPresence",
+    "framing_lost": "cameraPresence",
+    "camera_blocked": "cameraPresence",
+    "virtual_camera": "cameraPresence",
+    "multiple_people": "cameraPeople",
+    "device_detected": "cameraDevice",
+}
+CAMERA_TYPES = {
+    "face_absent",
+    "framing_lost",
+    "camera_blocked",
+    "virtual_camera",
+    "multiple_people",
+    "device_detected",
+}
+# Browser/agent signals that, if they overlap a camera incident, make it far more credible.
+CORROBORATING_TYPES = {
+    "visibility_hidden",
+    "navigation_away",
+    "window_blur",
+    "process_blacklisted",
+    "foreground_app_changed",
+    "clipboard_paste",
 }
 PROHIBITED_APP_NAMES = {
     "discord.exe",
@@ -45,7 +69,22 @@ RULE_WEIGHTS = {
     "process_blacklisted": 3,
     "multiple_displays": 2,
     "virtual_machine": 2,
+    "face_absent": 2,
+    "framing_lost": 1,
+    "camera_blocked": 4,
+    "virtual_camera": 4,
+    "multiple_people": 4,
+    "device_detected": 3,
 }
+
+
+def event_points(effective: str, metadata: dict) -> int:
+    """Base weight, plus one point per extra 10 s away from the camera (capped)."""
+    points = RULE_WEIGHTS[effective]
+    if effective == "face_absent":
+        seconds = float(metadata.get("durationMs") or 0) / 1000
+        points += min(3, max(0, int((seconds - 5) // 10)))
+    return points
 
 
 def utcnow() -> datetime:
@@ -98,7 +137,7 @@ def classify_event(row: MonitorEventRow, policy: dict) -> dict:
         "policyKey": POLICY_EVENT_MAP.get(effective) or POLICY_EVENT_MAP.get(row.type),
         "mode": mode,
         "scored": scored,
-        "points": RULE_WEIGHTS[effective] if scored else 0,
+        "points": event_points(effective, json.loads(row.metadata_json or "{}")) if scored else 0,
     }
 
 
@@ -139,6 +178,17 @@ def score_session(db: Session, session_id: str, persist: bool = True) -> dict:
             if delta <= 12:
                 correlations.append(
                     {"browser": left.type, "endpoint": right.type, "secondsApart": round(delta, 2)}
+                )
+                break
+
+    for camera in [row for row in enforced if row.type in CAMERA_TYPES]:
+        for other in rows:
+            if other.type not in CORROBORATING_TYPES:
+                continue
+            delta = abs((_event_time(camera) - _event_time(other)).total_seconds())
+            if delta <= 30:
+                correlations.append(
+                    {"browser": other.type, "endpoint": camera.type, "secondsApart": round(delta, 2), "camera": True}
                 )
                 break
 

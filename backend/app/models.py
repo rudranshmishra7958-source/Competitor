@@ -104,3 +104,18 @@ class LoginAudit(Base):
     ip_address: Mapped[str] = mapped_column(String(64), default="")
     user_agent: Mapped[str] = mapped_column(String(300), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
+class SessionSnapshot(Base):
+    """A single webcam still. Video is never uploaded or stored; only these frames are."""
+
+    __tablename__ = "session_snapshots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[str] = mapped_column(String(64), index=True)
+    student_id: Mapped[str] = mapped_column(String(64), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # reference | periodic | incident
+    event_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    path: Mapped[str] = mapped_column(String(260))
+    bytes: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, index=True)

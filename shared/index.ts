@@ -57,7 +57,16 @@ export type MonitorEventType =
   | "network_state_changed"
   | "display_state_changed"
   | "session_locked"
-  | "session_unlocked";
+  | "session_unlocked"
+  // Webcam proctoring (on-device analysis; only stills are uploaded)
+  | "face_absent"
+  | "framing_lost"
+  | "camera_blocked"
+  | "virtual_camera"
+  | "multiple_people"
+  | "device_detected"
+  | "camera_started"
+  | "camera_stopped";
 
 export interface MonitorEvent {
   type: MonitorEventType | string;
@@ -80,6 +89,17 @@ export interface WrittenSubmission {
   ocrText: string | null;
 }
 
+/** Faculty-granted webcam proctoring for a specific exam. */
+export interface WebcamPolicy {
+  required: boolean;
+  /** Seconds without a visible face before it counts as leaving the seat. */
+  awaySeconds: number;
+  detectSecondPerson: boolean;
+  detectDevices: boolean;
+  /** How often a routine still is kept, in seconds. */
+  periodicSnapshotSeconds: number;
+}
+
 export interface ExamSecurityPolicy {
   fullscreen: PolicyMode;
   tabSwitch: PolicyMode;
@@ -92,6 +112,11 @@ export interface ExamSecurityPolicy {
   cameraOptional: boolean;
   randomizeQuestionOrder: boolean;
   randomizeOptionOrder: boolean;
+  /** Present only when faculty enabled webcam proctoring for this exam. */
+  webcam?: WebcamPolicy;
+  cameraPresence?: PolicyMode;
+  cameraPeople?: PolicyMode;
+  cameraDevice?: PolicyMode;
 }
 
 export type ExamType = "mcq" | "written" | "mixed";
@@ -202,6 +227,49 @@ export interface CorrelationHit {
   eventIds: number[];
 }
 
+export type PriorityLevel = "low" | "medium" | "high" | "critical";
+
+export interface ReviewPriority {
+  /** 0-100, from the three highest-priority incidents. */
+  score: number;
+  level: PriorityLevel;
+  reasons: string[];
+  evidenceStrength: "none" | "weak" | "moderate" | "strong";
+  corroboratedIncidents: number;
+  singleSourceIncidents: number;
+  webcam: boolean;
+  cameraUptime: number | null;
+  snapshotCount: number;
+}
+
+export interface Incident {
+  id: string;
+  type: string;
+  category: "browser" | "agent" | "camera";
+  title: string;
+  reason: string;
+  startedAt: string;
+  endedAt: string;
+  durationSeconds: number;
+  count: number;
+  scored: boolean;
+  points: number;
+  confidence: number;
+  corroboratedBy: string[];
+  devices: string[];
+  eventIds: number[];
+  snapshotIds: number[];
+  priority: number;
+}
+
+export interface SnapshotInfo {
+  id: number;
+  kind: "reference" | "periodic" | "incident";
+  eventType: string | null;
+  createdAt: string;
+  bytes: number;
+}
+
 export interface IntegrityBreakdown {
   browser: number;
   endpoint: number;
@@ -223,6 +291,9 @@ export interface LiveSessionRow {
   latestAnomalyApplication?: string | null;
   review: ReviewDecision;
   breakdown: IntegrityBreakdown;
+  priority?: ReviewPriority;
+  latestSnapshotId?: number | null;
+  topIncident?: Incident | null;
 }
 
 export interface IntegrityReportSummary {
@@ -235,6 +306,7 @@ export interface IntegrityReportSummary {
   reviewStatus: ReviewerStatus;
   summary: string;
   updatedAt: string;
+  priority?: ReviewPriority;
 }
 
 export interface IntegrityReport extends IntegrityReportSummary {
@@ -243,6 +315,9 @@ export interface IntegrityReport extends IntegrityReportSummary {
   events: TimelineEvent[];
   review: ReviewDecision;
   submissionCount: number;
+  incidents?: Incident[];
+  snapshots?: SnapshotInfo[];
+  ruleVersion?: string;
 }
 
 export interface SecurityAlert {

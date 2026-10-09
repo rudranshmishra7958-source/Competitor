@@ -5,6 +5,12 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { IntegrityReport } from "@exam/shared";
 import { EventTimelineList } from "@/components/EventTimelineList";
+import {
+  CheckFirstList,
+  PriorityPanel,
+  SnapshotFilmstrip,
+  SnapshotLightbox,
+} from "@/components/proctor/ReviewEvidence";
 import { PageHeader } from "@/components/PageHeader";
 import { RiskChip } from "@/components/RiskChip";
 import { Badge } from "@/components/ui/Badge";
@@ -19,6 +25,7 @@ export default function IntegrityReportPage() {
   const params = useParams<{ sessionId: string }>();
   const [report, setReport] = useState<IntegrityReport | null>(null);
   const [message, setMessage] = useState("");
+  const [openSnapshot, setOpenSnapshot] = useState<number | null>(null);
 
   useEffect(() => {
     const load = () => void fetchReport(params.sessionId).then(setReport);
@@ -58,7 +65,40 @@ export default function IntegrityReportPage() {
         </ButtonLink>
       </div>
 
-      <Card strong>
+      {report.priority ? (
+        <PriorityPanel priority={report.priority} ruleVersion={report.ruleVersion} />
+      ) : null}
+
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold">Check these first</h2>
+        <p className="mt-1 text-sm text-[var(--muted)]">
+          Incidents ranked by priority: weight × detection confidence × corroboration × duration.
+        </p>
+        <div className="mt-3">
+          <CheckFirstList incidents={report.incidents ?? []} onOpenSnapshot={setOpenSnapshot} />
+        </div>
+      </section>
+
+      {report.snapshots?.length ? (
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold">Snapshot timeline</h2>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            Routine and incident stills in exam order. Incident frames are outlined in red. No video is stored.
+          </p>
+          <div className="mt-3">
+            <SnapshotFilmstrip snapshots={report.snapshots} activeId={openSnapshot} onOpen={setOpenSnapshot} />
+          </div>
+        </section>
+      ) : null}
+
+      <SnapshotLightbox
+        snapshots={report.snapshots ?? []}
+        openId={openSnapshot}
+        onClose={() => setOpenSnapshot(null)}
+        onNavigate={setOpenSnapshot}
+      />
+
+      <Card strong className="mt-8">
         <div className="flex flex-wrap items-center gap-3">
           <RiskChip level={report.risk} />
           <Badge tone="accent">{reviewLabel(report.reviewStatus)}</Badge>

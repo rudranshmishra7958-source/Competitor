@@ -88,6 +88,23 @@ After submitting, students see a score ring and per-question review. Multiple-ch
 
 Faculty can add short-answer questions (text or numeric with a tolerance) in the exam builder.
 
+## Webcam proctoring (faculty opt-in)
+
+Faculty turn it on per exam in the exam builder (**Webcam proctoring → Require webcam**), with the away threshold (default 5 s), routine snapshot interval, and second-person / device detection. The demo exam **Webcam-proctored quiz** has it on.
+
+Use Chrome or Edge at `http://localhost:3000` (the in-app browser pane blocks cameras).
+
+1. Student opens the exam: consent, then a framing check that needs face + shoulders + desk surface in view for 3 seconds. A reference photo is kept.
+2. During the exam a self-view sits in the top-right corner. Everything is analysed on the device (MediaPipe models served from this app).
+3. Leaving the seat for more than 5 s, another person, a phone/laptop, or a covered camera shows the student a **"You are being monitored"** dialog and records an event plus a snapshot.
+4. On submit or timeout the camera turns off. No video is ever stored; snapshots stay for review and are deleted after `SNAPSHOT_RETENTION_DAYS` (180).
+
+For proctors, every report starts with a **Review priority** (0-100, Critical/High/Medium/Low) and the reasons behind it, trust signals (evidence strength, corroboration, camera uptime), a **Check these first** list with snapshots, and a snapshot timeline with a viewer that compares each frame to the reference photo. The PDF export includes the same, with images.
+
+No webcam handy? On Live Monitoring choose **Webcam: away, phone, second person** in Demo tools.
+
+`npm run dev` / `npm run build` download the three models once into `frontend/public/models` (`npm run setup:vision` does it manually).
+
 ## Python agent (optional)
 
 One-time setup:

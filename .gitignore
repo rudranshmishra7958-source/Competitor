@@ -12,3 +12,7 @@ backend/exam.db
 
 *.db
 *.db-journal
+backend/data/
+backend/test_snapshots/
+frontend/public/mediapipe/
+frontend/public/models/

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, Clock, Laptop, Lock, ShieldCheck } from "lucide-react";
+import { ArrowRight, Clock, Laptop, Lock, ShieldCheck, Video } from "lucide-react";
 import { EmptyState, PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
@@ -83,6 +83,11 @@ export default function UpcomingExamsPage() {
                   >
                     {exam.policy.requireEndpointAgent ? "Agent required" : "Browser only"}
                   </Badge>
+                  {exam.policy.webcam?.required ? (
+                    <Badge tone="medium" icon={<Video className="size-3.5" aria-hidden />}>
+                      Webcam required
+                    </Badge>
+                  ) : null}
                 </div>
                 <div className="mt-5 pt-1">
                   {live ? (

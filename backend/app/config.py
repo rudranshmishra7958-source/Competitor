@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     endpoint_grace_seconds: int = 30
     # Enables proctor-only demo helpers such as simulated sessions. Turn off in production.
     demo_mode: bool = True
+    # Webcam stills (never video). Stored on disk, deleted after the retention window.
+    snapshot_dir: str = "./data/snapshots"
+    snapshot_max_bytes: int = 300_000
+    snapshot_max_per_session: int = 400
+    snapshot_retention_days: int = 180
 
 
 settings = Settings()

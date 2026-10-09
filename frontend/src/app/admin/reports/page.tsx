@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { IntegrityReportSummary, RiskLevel } from "@exam/shared";
 import { EmptyState, PageHeader } from "@/components/PageHeader";
 import { RiskChip } from "@/components/RiskChip";
+import { PriorityBadge } from "@/components/proctor/ReviewEvidence";
 import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card, StatCard } from "@/components/ui/Card";
@@ -56,7 +57,9 @@ export default function ReportsPage() {
             <StatCard label="High risk" value={counts.high} tone="high" icon={<OctagonAlert className="size-5" aria-hidden />} />
           </div>
           <ul className="space-y-4">
-            {reports.map((report) => {
+            {[...reports]
+              .sort((a, b) => (b.priority?.score ?? 0) - (a.priority?.score ?? 0))
+              .map((report) => {
               const examTitle = getExam(report.examId)?.title ?? report.examId;
               return (
                 <Card
@@ -77,11 +80,19 @@ export default function ReportsPage() {
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                      <PriorityBadge priority={report.priority} />
                       <RiskChip level={report.risk} />
                       <Badge tone="accent">{reviewLabel(report.reviewStatus)}</Badge>
                     </div>
                   </div>
-                  <p className="mt-4 text-base leading-relaxed text-[var(--foreground)]">
+                  {report.priority?.reasons.length ? (
+                    <ul className="mt-4 list-disc space-y-1 pl-5 text-sm">
+                      {report.priority.reasons.map((reason) => (
+                        <li key={reason}>{reason}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
                     {report.summary}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">

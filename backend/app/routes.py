@@ -27,6 +27,7 @@ from app.reporting import (
     reports_csv,
     session_live_row,
 )
+from app.proctoring import delete_snapshots, session_snapshots, store_snapshot
 from app.risk import classify_event, score_session
 from app.security import (
     admin_user, create_agent_token, create_token, current_user, decode_token,
@@ -477,6 +478,13 @@ SIMULATION_SCENARIOS: dict[str, list[tuple[str, str, dict]]] = {
         ("browser", "clipboard_copy", {}),
         ("browser", "clipboard_paste", {}),
     ],
+    "webcam_violations": [
+        ("browser", "face_absent", {"durationMs": 14000, "confidence": 0.9}),
+        ("browser", "visibility_hidden", {}),
+        ("browser", "device_detected", {"label": "cell phone", "confidence": 0.82}),
+        ("browser", "multiple_people", {"count": 2, "confidence": 0.88}),
+        ("browser", "face_absent", {"durationMs": 7000, "confidence": 0.85}),
+    ],
     "app_switcher": [
         ("endpoint", "agent_heartbeat", {}),
         ("endpoint", "display_state_changed", {"count": 2}),
@@ -488,8 +496,37 @@ SIMULATION_SCENARIOS: dict[str, list[tuple[str, str, dict]]] = {
 }
 
 
+def _sample_jpeg(kind: str, caption: str) -> bytes:
+    """Placeholder still for simulated sessions (demo only; real stills come from the webcam)."""
+    import io as _io
+
+    from PIL import Image, ImageDraw
+
+    tones = {
+        "reference": (30, 64, 90),
+        "periodic": (28, 42, 64),
+        "face_absent": (90, 60, 20),
+        "device_detected": (110, 30, 30),
+        "multiple_people": (110, 30, 60),
+    }
+    image = Image.new("RGB", (480, 360), tones.get(kind, (40, 40, 40)))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((8, 8, 471, 351), outline=(200, 200, 200), width=2)
+    if kind != "face_absent":
+        draw.ellipse((190, 80, 290, 190), outline=(230, 230, 230), width=4)
+        draw.rectangle((160, 200, 320, 330), outline=(230, 230, 230), width=4)
+    if kind == "multiple_people":
+        draw.ellipse((340, 110, 410, 185), outline=(250, 180, 180), width=4)
+    if kind == "device_detected":
+        draw.rectangle((60, 220, 110, 310), outline=(255, 120, 120), width=4)
+    draw.text((20, 20), f"SIMULATED - {caption}", fill=(255, 255, 255))
+    buffer = _io.BytesIO()
+    image.save(buffer, format="JPEG", quality=70)
+    return buffer.getvalue()
+
+
 class SimulateBody(BaseModel):
-    scenario: Literal["clean", "tab_hopper", "copy_paste", "app_switcher"] = "tab_hopper"
+    scenario: Literal["clean", "tab_hopper", "copy_paste", "app_switcher", "webcam_violations"] = "tab_hopper"
     examId: str = Field(default="ex-demo-integrity", min_length=1, max_length=64)
 
 
@@ -516,11 +553,20 @@ async def simulate_session(
     session_id = f"sim-{uuid4().hex[:12]}"
     steps = SIMULATION_SCENARIOS[body.scenario]
     uses_agent = any(source == "endpoint" for source, _, _ in steps)
+    webcam = body.scenario == "webcam_violations"
+    policy = {**SIMULATION_POLICY}
+    if webcam:
+        policy.update(
+            cameraPresence="enforce",
+            cameraPeople="enforce",
+            cameraDevice="enforce",
+            webcam={"required": True, "awaySeconds": 5},
+        )
     session = ExamSession(
         session_id=session_id,
         exam_id=body.examId,
         student_id=student_id,
-        policy_json=json.dumps(SIMULATION_POLICY),
+        policy_json=json.dumps(policy),
         started_at=now - timedelta(minutes=6),
         expires_at=now + timedelta(minutes=30),
         last_seen_at=now,
@@ -533,8 +579,19 @@ async def simulate_session(
             session_id=session_id, decision="unreviewed", note="", created_at=now, updated_at=now
         )
     )
+    db.commit()
+    if webcam:
+        store_snapshot(db, session_id, student_id, _sample_jpeg("reference", "Reference photo"), "reference",
+                       created_at=now - timedelta(minutes=6))
+        for minute in (5, 4, 2, 1):
+            store_snapshot(db, session_id, student_id, _sample_jpeg("periodic", "Periodic check"), "periodic",
+                           created_at=now - timedelta(minutes=minute))
     for index, (source, event_type, metadata) in enumerate(steps):
-        at = now - timedelta(seconds=(len(steps) - index) * 40)
+        at = now - timedelta(seconds=(len(steps) - index) * (20 if webcam else 40))
+        if webcam and event_type in {"face_absent", "device_detected", "multiple_people"}:
+            snap = store_snapshot(db, session_id, student_id, _sample_jpeg(event_type, event_type.replace("_", " ")),
+                                  "incident", event_type, created_at=at)
+            metadata = {**metadata, "snapshotId": snap.id}
         db.add(
             MonitorEventRow(
                 type=event_type,
@@ -562,6 +619,7 @@ def clear_simulations(
         raise HTTPException(status_code=404, detail="Not found")
     ids = [row.session_id for row in db.query(ExamSession).filter(ExamSession.session_id.like("sim-%"))]
     if ids:
+        delete_snapshots(db, ids)
         db.query(MonitorEventRow).filter(MonitorEventRow.session_id.in_(ids)).delete(synchronize_session=False)
         db.query(ReviewDecision).filter(ReviewDecision.session_id.in_(ids)).delete(synchronize_session=False)
         db.query(RiskSnapshot).filter(RiskSnapshot.session_id.in_(ids)).delete(synchronize_session=False)
@@ -705,7 +763,8 @@ def export_report_pdf(
     session = db.query(ExamSession).filter_by(session_id=session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    data = report_pdf(report_dto(db, session))
+    paths = {row.id: row.path for row in session_snapshots(db, session_id)}
+    data = report_pdf(report_dto(db, session), paths)
     return StreamingResponse(
         iter([data]),
         media_type="application/pdf",

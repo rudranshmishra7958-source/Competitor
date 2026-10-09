@@ -9,15 +9,17 @@ import type {
   McqQuestion,
   Question,
   ShortAnswerQuestion,
+  WebcamPolicy,
   WrittenQuestion,
 } from "@exam/shared";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Plus, Save, Trash2, Video } from "lucide-react";
 import { PolicySelect, POLICIES } from "@/components/PolicySelect";
 import { Badge } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import {
   DEFAULT_POLICY,
+  DEFAULT_WEBCAM_POLICY,
   canEditExam,
   studentRoster,
   upsertExam,
@@ -81,6 +83,14 @@ export function ExamForm({
   );
   const [questions, setQuestions] = useState<Question[]>(initialQuestions ?? []);
   const [error, setError] = useState<string | null>(null);
+
+  const webcam = policy.webcam;
+  function setWebcam(change: Partial<WebcamPolicy>) {
+    setPolicy((current) => ({
+      ...current,
+      webcam: { ...DEFAULT_WEBCAM_POLICY, ...current.webcam, ...change },
+    }));
+  }
 
   function toggleStudent(id: string) {
     setAssigned((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -407,6 +417,116 @@ export function ExamForm({
           />
           Require endpoint agent (hard block if missing)
         </label>
+      </Card>
+
+      <Card as="section" className="space-y-4 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <Video className="size-5 text-[var(--nav-active-fg)]" aria-hidden />
+              Webcam proctoring
+            </h2>
+            <p className="mt-1 max-w-xl text-sm text-[var(--muted)]">
+              Special permission for this exam only. Students consent, frame face to desk, and keep the
+              camera on. Analysis runs on their device; only still snapshots are kept, never video.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              disabled={locked}
+              checked={Boolean(webcam?.required)}
+              onChange={(e) =>
+                setPolicy(
+                  e.target.checked
+                    ? {
+                        ...policy,
+                        webcam: { ...DEFAULT_WEBCAM_POLICY },
+                        cameraPresence: policy.cameraPresence ?? "enforce",
+                        cameraPeople: policy.cameraPeople ?? "enforce",
+                        cameraDevice: policy.cameraDevice ?? "enforce",
+                      }
+                    : { ...policy, webcam: undefined },
+                )
+              }
+            />
+            Require webcam
+          </label>
+        </div>
+        {webcam?.required ? (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm">
+                Away threshold (seconds without a visible face)
+                <input
+                  type="number"
+                  min={3}
+                  max={60}
+                  className={field}
+                  disabled={locked}
+                  value={webcam.awaySeconds}
+                  onChange={(e) => setWebcam({ awaySeconds: Math.max(3, Number(e.target.value) || 5) })}
+                />
+              </label>
+              <label className="block text-sm">
+                Routine snapshot every (seconds)
+                <input
+                  type="number"
+                  min={15}
+                  max={600}
+                  className={field}
+                  disabled={locked}
+                  value={webcam.periodicSnapshotSeconds}
+                  onChange={(e) =>
+                    setWebcam({ periodicSnapshotSeconds: Math.max(15, Number(e.target.value) || 60) })
+                  }
+                />
+              </label>
+            </div>
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  disabled={locked}
+                  checked={webcam.detectSecondPerson}
+                  onChange={(e) => setWebcam({ detectSecondPerson: e.target.checked })}
+                />
+                Detect a second person
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  disabled={locked}
+                  checked={webcam.detectDevices}
+                  onChange={(e) => setWebcam({ detectDevices: e.target.checked })}
+                />
+                Detect phones and second devices
+              </label>
+            </div>
+            <table className="w-full text-left text-sm">
+              <tbody>
+                {(
+                  [
+                    ["cameraPresence", "Leaving the seat / covered camera"],
+                    ["cameraPeople", "Another person in view"],
+                    ["cameraDevice", "Phone or device in view"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <tr key={key} className="border-t border-[var(--border)]">
+                    <th scope="row" className="py-3 pr-3 font-medium">{label}</th>
+                    <td className="py-3 text-right">
+                      <PolicySelect
+                        value={policy[key] ?? "enforce"}
+                        disabled={locked}
+                        onChange={(v) => setPolicy({ ...policy, [key]: v })}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        ) : null}
       </Card>
 
       <div className="glass-strong fixed inset-x-0 bottom-0 z-30 flex justify-end gap-3 rounded-none border-x-0 border-b-0 px-4 py-3 sm:px-6">
