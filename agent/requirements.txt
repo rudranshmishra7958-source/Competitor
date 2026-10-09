@@ -1,0 +1,3 @@
+psutil>=6.0,<8
+websockets>=12,<16
+pytest>=8,<10
