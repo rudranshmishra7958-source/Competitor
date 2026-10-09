@@ -10,6 +10,7 @@ import {
   History,
   LayoutDashboard,
   Menu,
+  PlayCircle,
   Radar,
   ShieldCheck,
   User,
@@ -37,6 +38,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/student/upcoming": CalendarClock,
   "/student/past": History,
   "/student/profile": User,
+  "/demo": PlayCircle,
 };
 
 function initials(name: string | undefined): string {

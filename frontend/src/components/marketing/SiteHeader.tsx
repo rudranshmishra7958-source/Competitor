@@ -29,6 +29,9 @@ export function SiteHeader() {
           <ButtonLink href="/login/student" variant="secondary" size="sm" className="hidden sm:inline-flex">
             Log in
           </ButtonLink>
+          <ButtonLink href="/demo" variant="secondary" size="sm">
+            Demo
+          </ButtonLink>
           <ButtonLink href="/login/admin" size="sm">
             For faculty
           </ButtonLink>

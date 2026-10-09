@@ -180,6 +180,15 @@ export function LoginForm({ role }: { role: Role }) {
               </Button>
             </form>
 
+            {faculty ? (
+              <Link
+                href="/demo"
+                className="mt-4 flex items-center justify-center gap-2 rounded-full border border-border py-3 text-sm font-medium hover:bg-muted"
+              >
+                Watch the recorded demo
+              </Link>
+            ) : null}
+
             <details className="mt-8 border-t border-border pt-5 text-sm text-muted-foreground">
               <summary className="cursor-pointer font-medium text-foreground">Demo accounts</summary>
               <p className="mt-2">Password for every demo account: password</p>
