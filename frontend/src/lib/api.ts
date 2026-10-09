@@ -308,6 +308,35 @@ export async function fetchLiveBoard(): Promise<LiveSessionRow[] | null> {
   }
 }
 
+export type SimulationScenario = "clean" | "tab_hopper" | "copy_paste" | "app_switcher";
+
+/** Demo helper: the API creates a scripted session for a spare demo student. */
+export async function simulateSession(
+  scenario: SimulationScenario,
+  examId = "ex-demo-integrity",
+): Promise<LiveSessionRow | null> {
+  try {
+    const res = await apiRequest("/admin/demo/simulate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scenario, examId }),
+    });
+    if (!res.ok) return null;
+    return asLiveRow(await res.json());
+  } catch {
+    return null;
+  }
+}
+
+export async function clearSimulations(): Promise<boolean> {
+  try {
+    const res = await apiRequest("/admin/demo/simulate", { method: "DELETE" });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchOwnSession(sessionId: string): Promise<LiveSessionRow | null> {
   try {
     const res = await apiRequest(`/sessions/${encodeURIComponent(sessionId)}`);

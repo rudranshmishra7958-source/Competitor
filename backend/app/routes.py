@@ -17,7 +17,7 @@ from app.config import settings
 from app.db import SessionLocal, get_db
 from app.live_state import allow_event
 from app.models import (
-    ExamSession, LoginAudit, MonitorEventRow, RefreshToken, ReviewDecision, User,
+    ExamSession, LoginAudit, MonitorEventRow, RefreshToken, ReviewDecision, RiskSnapshot, User,
 )
 from app.reporting import (
     _timeline_events,
@@ -443,6 +443,131 @@ def dashboard(_: Annotated[User, Depends(admin_user)], db: Session = Depends(get
         "highRisk": sum(item["risk"] == "high" for item in risks),
         "unreviewed": sum(item.decision == "unreviewed" for item in decisions),
     }
+
+
+SIMULATION_POLICY = {
+    "fullscreen": "allow_but_log",
+    "tabSwitch": "enforce",
+    "clipboard": "enforce",
+    "externalApp": "enforce",
+    "externalSearch": "enforce",
+    "multiWindow": "enforce",
+    "requireEndpointAgent": False,
+}
+
+# (source, type, metadata) steps replayed over the last few minutes.
+SIMULATION_SCENARIOS: dict[str, list[tuple[str, str, dict]]] = {
+    "clean": [
+        ("browser", "fullscreen_enter", {}),
+        ("browser", "window_focus", {}),
+        ("browser", "submission_saved", {"revision": 1}),
+    ],
+    "tab_hopper": [
+        ("browser", "visibility_hidden", {}),
+        ("browser", "visibility_visible", {}),
+        ("browser", "window_blur", {}),
+        ("browser", "visibility_hidden", {}),
+        ("browser", "navigation_away", {}),
+        ("browser", "visibility_hidden", {}),
+    ],
+    "copy_paste": [
+        ("browser", "clipboard_copy", {}),
+        ("browser", "contextmenu", {}),
+        ("browser", "clipboard_paste", {}),
+        ("browser", "clipboard_copy", {}),
+        ("browser", "clipboard_paste", {}),
+    ],
+    "app_switcher": [
+        ("endpoint", "agent_heartbeat", {}),
+        ("endpoint", "display_state_changed", {"count": 2}),
+        ("browser", "window_blur", {}),
+        ("endpoint", "foreground_app_changed", {"application": "discord.exe"}),
+        ("browser", "devtools_open", {}),
+        ("endpoint", "foreground_app_changed", {"application": "chatgpt.exe"}),
+    ],
+}
+
+
+class SimulateBody(BaseModel):
+    scenario: Literal["clean", "tab_hopper", "copy_paste", "app_switcher"] = "tab_hopper"
+    examId: str = Field(default="ex-demo-integrity", min_length=1, max_length=64)
+
+
+@router.post("/admin/demo/simulate", status_code=201)
+async def simulate_session(
+    body: SimulateBody,
+    _: Annotated[User, Depends(admin_user)],
+    db: Session = Depends(get_db),
+):
+    """Create a scripted student session so demos don't depend on live tab switching."""
+    if not settings.demo_mode:
+        raise HTTPException(status_code=404, detail="Not found")
+    from uuid import uuid4
+
+    from app.seed import SIMULATION_STUDENT_IDS
+
+    busy = {
+        row.student_id
+        for row in db.query(ExamSession).filter(ExamSession.session_id.like("sim-%")).all()
+    }
+    free = [sid for sid in SIMULATION_STUDENT_IDS if sid not in busy] or SIMULATION_STUDENT_IDS
+    student_id = free[0]
+    now = utcnow()
+    session_id = f"sim-{uuid4().hex[:12]}"
+    steps = SIMULATION_SCENARIOS[body.scenario]
+    uses_agent = any(source == "endpoint" for source, _, _ in steps)
+    session = ExamSession(
+        session_id=session_id,
+        exam_id=body.examId,
+        student_id=student_id,
+        policy_json=json.dumps(SIMULATION_POLICY),
+        started_at=now - timedelta(minutes=6),
+        expires_at=now + timedelta(minutes=30),
+        last_seen_at=now,
+        browser_connected_at=now - timedelta(minutes=6),
+        endpoint_connected_at=now - timedelta(minutes=5) if uses_agent else None,
+    )
+    db.add(session)
+    db.add(
+        ReviewDecision(
+            session_id=session_id, decision="unreviewed", note="", created_at=now, updated_at=now
+        )
+    )
+    for index, (source, event_type, metadata) in enumerate(steps):
+        at = now - timedelta(seconds=(len(steps) - index) * 40)
+        db.add(
+            MonitorEventRow(
+                type=event_type,
+                timestamp=at,
+                received_at=at,
+                clock_skew_ms=0,
+                exam_id=body.examId,
+                student_id=student_id,
+                session_id=session_id,
+                source=source,
+                metadata_json=json.dumps({**metadata, "simulated": True}),
+            )
+        )
+    db.commit()
+    await admin_hub.broadcast({"type": "session_updated", "sessionId": session_id})
+    return session_live_row(db, session)
+
+
+@router.delete("/admin/demo/simulate", status_code=204)
+def clear_simulations(
+    _: Annotated[User, Depends(admin_user)],
+    db: Session = Depends(get_db),
+):
+    if not settings.demo_mode:
+        raise HTTPException(status_code=404, detail="Not found")
+    ids = [row.session_id for row in db.query(ExamSession).filter(ExamSession.session_id.like("sim-%"))]
+    if ids:
+        db.query(MonitorEventRow).filter(MonitorEventRow.session_id.in_(ids)).delete(synchronize_session=False)
+        db.query(ReviewDecision).filter(ReviewDecision.session_id.in_(ids)).delete(synchronize_session=False)
+        db.query(RiskSnapshot).filter(RiskSnapshot.session_id.in_(ids)).delete(synchronize_session=False)
+        db.query(ExamSession).filter(ExamSession.session_id.in_(ids)).delete(synchronize_session=False)
+        db.commit()
+    return Response(status_code=204)
 
 
 @router.get("/admin/sessions")

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import type {
@@ -9,9 +8,14 @@ import type {
   ExamType,
   McqQuestion,
   Question,
+  ShortAnswerQuestion,
   WrittenQuestion,
 } from "@exam/shared";
+import { Plus, Save, Trash2 } from "lucide-react";
 import { PolicySelect, POLICIES } from "@/components/PolicySelect";
+import { Badge } from "@/components/ui/Badge";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import {
   DEFAULT_POLICY,
   canEditExam,
@@ -40,6 +44,10 @@ function newMcq(): McqQuestion {
     ],
     correctOptionId: o1,
   };
+}
+
+function newShort(): ShortAnswerQuestion {
+  return { id: crypto.randomUUID(), kind: "short", prompt: "", acceptedAnswers: [""], numeric: false, tolerance: 0 };
 }
 
 function newWritten(): WrittenQuestion {
@@ -101,17 +109,18 @@ export function ExamForm({
     router.refresh();
   }
 
-  const field = "mt-1 w-full rounded-md border border-[var(--border)] bg-white px-3 py-2 text-sm";
+  const field =
+    "mt-1.5 w-full min-h-11 rounded-xl border border-[var(--border)] px-3.5 py-2 text-sm disabled:opacity-70";
 
   return (
-    <form className="space-y-8" onSubmit={onSubmit}>
+    <form className="space-y-6 pb-24" onSubmit={onSubmit}>
       {error ? (
-        <p className="text-sm text-[var(--risk-high-fg)]" role="alert">
+        <p className="rounded-xl bg-[var(--risk-high-bg)] px-3 py-2 text-sm text-[var(--risk-high-fg)]" role="alert">
           {error}
         </p>
       ) : null}
 
-      <section className="space-y-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+      <Card as="section" className="space-y-4 sm:p-6">
         <h2 className="text-lg font-semibold">Schedule</h2>
         <label className="block text-sm">
           Title
@@ -162,27 +171,25 @@ export function ExamForm({
             ))}
           </div>
         </fieldset>
-      </section>
+      </Card>
 
-      <section className="space-y-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+      <Card as="section" className="space-y-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">Questions</h2>
           {!locked ? (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="rounded-md border border-[var(--border)] px-3 py-1.5 text-sm"
-                onClick={() => setQuestions((q) => [...q, newMcq()])}
-              >
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setQuestions((q) => [...q, newMcq()])}>
+                <Plus className="size-4" aria-hidden />
                 Add MCQ
-              </button>
-              <button
-                type="button"
-                className="rounded-md border border-[var(--border)] px-3 py-1.5 text-sm"
-                onClick={() => setQuestions((q) => [...q, newWritten()])}
-              >
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setQuestions((q) => [...q, newWritten()])}>
+                <Plus className="size-4" aria-hidden />
                 Add written
-              </button>
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setQuestions((q) => [...q, newShort()])}>
+                <Plus className="size-4" aria-hidden />
+                Add short answer
+              </Button>
             </div>
           ) : null}
         </div>
@@ -208,19 +215,24 @@ export function ExamForm({
           <p className="text-sm text-[var(--muted)]">No questions yet.</p>
         ) : (
           questions.map((q, index) => (
-            <article key={q.id} className="rounded-md border border-[var(--border)] p-4">
-              <div className="mb-2 flex justify-between text-sm text-[var(--muted)]">
-                <span>
-                  {index + 1}. {q.kind === "mcq" ? "MCQ" : "Written"}
+            <article key={q.id} className="rounded-2xl border border-[var(--border)] bg-[var(--nav-active-bg)]/30 p-4">
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="flex items-center gap-2 font-medium">
+                  {index + 1}.
+                  <Badge tone="accent">
+                    {q.kind === "mcq" ? "MCQ" : q.kind === "short" ? "Short answer" : "Written"}
+                  </Badge>
                 </span>
                 {!locked ? (
-                  <button
-                    type="button"
-                    className="underline"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Remove question ${index + 1}`}
                     onClick={() => setQuestions((list) => list.filter((x) => x.id !== q.id))}
                   >
+                    <Trash2 className="size-4" aria-hidden />
                     Remove
-                  </button>
+                  </Button>
                 ) : null}
               </div>
               <textarea
@@ -274,9 +286,9 @@ export function ExamForm({
                     </li>
                   ))}
                   {!locked && q.options.length < 4 ? (
-                    <button
-                      type="button"
-                      className="text-sm text-[var(--accent)] underline"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() =>
                         setQuestions((list) =>
                           list.map((x) =>
@@ -290,10 +302,62 @@ export function ExamForm({
                         )
                       }
                     >
+                      <Plus className="size-4" aria-hidden />
                       Add option
-                    </button>
+                    </Button>
                   ) : null}
                 </ul>
+              ) : q.kind === "short" ? (
+                <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+                  <label className="block text-sm">
+                    Accepted answers (comma-separated)
+                    <input
+                      className={field}
+                      disabled={locked}
+                      value={q.acceptedAnswers.join(", ")}
+                      placeholder="e.g. atomicity"
+                      onChange={(e) => {
+                        const acceptedAnswers = e.target.value.split(",").map((v) => v.trim());
+                        setQuestions((list) =>
+                          list.map((x) => (x.id === q.id && x.kind === "short" ? { ...x, acceptedAnswers } : x)),
+                        );
+                      }}
+                    />
+                  </label>
+                  <label className="flex min-h-11 items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      disabled={locked}
+                      checked={Boolean(q.numeric)}
+                      onChange={(e) => {
+                        const numeric = e.target.checked;
+                        setQuestions((list) =>
+                          list.map((x) => (x.id === q.id && x.kind === "short" ? { ...x, numeric } : x)),
+                        );
+                      }}
+                    />
+                    Numeric
+                  </label>
+                  {q.numeric ? (
+                    <label className="block text-sm">
+                      Tolerance
+                      <input
+                        type="number"
+                        min={0}
+                        step="any"
+                        className={`${field} w-28`}
+                        disabled={locked}
+                        value={q.tolerance ?? 0}
+                        onChange={(e) => {
+                          const tolerance = Number(e.target.value) || 0;
+                          setQuestions((list) =>
+                            list.map((x) => (x.id === q.id && x.kind === "short" ? { ...x, tolerance } : x)),
+                          );
+                        }}
+                      />
+                    </label>
+                  ) : null}
+                </div>
               ) : (
                 <p className="mt-2 text-xs text-[var(--muted)]">
                   Photo submission in Phase 4. OCR text stays empty (`ocrText: null`).
@@ -302,9 +366,9 @@ export function ExamForm({
             </article>
           ))
         )}
-      </section>
+      </Card>
 
-      <section className="space-y-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+      <Card as="section" className="space-y-4 sm:p-6">
         <h2 className="text-lg font-semibold">Security policy</h2>
         <p className="text-sm text-[var(--muted)]">
           Signals are always captured later; this only decides whether they count.
@@ -313,8 +377,8 @@ export function ExamForm({
           <tbody>
             {POLICIES.map((row) => (
               <tr key={row.key} className="border-t border-[var(--border)]">
-                <th className="py-2 font-medium">{row.label}</th>
-                <td className="py-2">
+                <th scope="row" className="py-3 pr-3 font-medium">{row.label}</th>
+                <td className="py-3 text-right">
                   <PolicySelect
                     value={policy[row.key]}
                     disabled={locked}
@@ -343,20 +407,18 @@ export function ExamForm({
           />
           Require endpoint agent (hard block if missing)
         </label>
-      </section>
+      </Card>
 
-      <div className="flex gap-3">
-        {!locked ? (
-          <button
-            type="submit"
-            className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white"
-          >
-            Save exam
-          </button>
-        ) : null}
-        <Link href="/admin/exams" className="rounded-md border border-[var(--border)] px-4 py-2 text-sm">
+      <div className="glass-strong fixed inset-x-0 bottom-0 z-30 flex justify-end gap-3 rounded-none border-x-0 border-b-0 px-4 py-3 sm:px-6">
+        <ButtonLink href="/admin/exams" variant="secondary">
           Back to list
-        </Link>
+        </ButtonLink>
+        {!locked ? (
+          <Button type="submit">
+            <Save className="size-4" aria-hidden />
+            Save exam
+          </Button>
+        ) : null}
       </div>
     </form>
   );

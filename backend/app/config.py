@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     refresh_token_days: int = 7
     cookie_secure: bool = False
     endpoint_grace_seconds: int = 30
+    # Enables proctor-only demo helpers such as simulated sessions. Turn off in production.
+    demo_mode: bool = True
 
 
 settings = Settings()

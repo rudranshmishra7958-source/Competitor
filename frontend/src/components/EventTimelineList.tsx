@@ -1,4 +1,5 @@
 import type { TimelineEvent } from "@exam/shared";
+import { Badge } from "@/components/ui/Badge";
 import { formatForegroundDetail } from "@/lib/app-name";
 import { eventLabelForAdmin, sourceLabel } from "@/lib/event-labels";
 import { violationPoints } from "@/lib/policy-scoring";
@@ -32,10 +33,10 @@ export function EventTimelineList({
         return (
           <li
             key={event.id}
-            className={`rounded-lg border px-4 py-3 ${
-              variant === "unsafe"
-                ? "border-red-200 bg-red-50"
-                : "border-[var(--border)] bg-[var(--surface)]"
+            className={`glass rounded-2xl border-l-4 px-4 py-3 ${
+              variant === "unsafe" || event.scored
+                ? "!border-l-[var(--risk-high-fg)]"
+                : "!border-l-[var(--accent)]"
             }`}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -45,12 +46,10 @@ export function EventTimelineList({
               </time>
             </div>
             <p className="mt-2 flex flex-wrap gap-2 text-xs">
-              <span className="rounded-full bg-[var(--exam-bg)] px-2 py-0.5 text-[var(--cyan)]">
-                {sourceLabel(event.source)}
-              </span>
+              <Badge tone="accent">{sourceLabel(event.source)}</Badge>
               {executable ? <span className="text-[var(--muted)]">{executable}</span> : null}
               {variant === "unsafe" ? (
-                <span className="font-medium text-red-700">+{points} integrity points</span>
+                <span className="font-medium text-[var(--risk-high-fg)]">+{points} integrity points</span>
               ) : (
                 <span className="text-[var(--muted)]">
                   {event.scored ? "Counted by the scoring rule" : "Logged only"}

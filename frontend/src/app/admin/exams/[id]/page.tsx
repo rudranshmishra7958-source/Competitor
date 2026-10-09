@@ -23,7 +23,7 @@ export default function InspectExamPage() {
   }, [params.id]);
 
   if (!exam) {
-    return <p className="text-sm text-[var(--muted)]">Exam not found in this browser store.</p>;
+    return <p className="glass rounded-2xl p-6 text-sm text-[var(--muted)]">Exam not found in this browser store.</p>;
   }
 
   return (
@@ -41,7 +41,8 @@ export default function InspectExamPage() {
                   <p className="text-[var(--muted)]">
                     {who?.displayName ?? s.studentId} · {new Date(s.createdAt).toLocaleString()}
                   </p>
-                  <img src={s.imageUrl} alt="Student written scan" className="mt-1 max-h-40 rounded-md border border-[var(--border)]" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={s.imageUrl} alt="Student written scan" className="mt-1 max-h-40 rounded-xl border border-[var(--border)]" />
                 </li>
               );
             })}

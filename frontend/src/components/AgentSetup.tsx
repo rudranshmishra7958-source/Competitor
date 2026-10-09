@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Copy, PlugZap } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { createAgentToken } from "@/lib/api";
 
 export function AgentSetup({
@@ -36,16 +39,26 @@ export function AgentSetup({
   }
 
   return (
-    <div className="text-sm">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="rounded-md border border-[var(--cyan)] px-3 py-1 text-[var(--cyan)]"
-      >
-        {open ? "Hide agent setup" : "Connect agent"}
-      </button>
+    <div className="glass rounded-2xl p-4 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <PlugZap className="size-5 text-[var(--nav-active-fg)]" aria-hidden />
+          <span className="font-medium">Endpoint agent</span>
+          <Badge tone={connected ? "low" : required ? "medium" : "neutral"}>
+            {connected ? "Connected" : required ? "Required" : "Optional"}
+          </Badge>
+        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+        >
+          {open ? "Hide agent setup" : "Connect agent"}
+        </Button>
+      </div>
       {open ? (
-        <div className="mt-3 max-w-xl text-[var(--text-muted)]">
+        <div className="mt-3 max-w-xl text-[var(--muted)]">
           <p>
             {required ? "This exam requires the agent before you can answer." : "Optional. Connecting raises assurance."}{" "}
             {connected ? "The agent is connected." : "The agent is not connected yet."}
@@ -53,14 +66,15 @@ export function AgentSetup({
           <p className="mt-2">
             It reports the foreground program name, display count, and network state. It does not read titles, keys, or screenshots.
           </p>
-          <button
-            type="button"
-            onClick={copyCommand}
-            className="mt-3 rounded-md bg-[var(--cyan)] px-3 py-1.5 font-medium text-[var(--exam-bg)]"
-          >
+          <Button size="sm" onClick={copyCommand} className="mt-3">
+            <Copy className="size-4" aria-hidden />
             Copy PowerShell launch command
-          </button>
-          {message ? <p className="mt-2 text-[var(--cyan)]">{message}</p> : null}
+          </Button>
+          {message ? (
+            <p className="mt-2 text-[var(--nav-active-fg)]" role="status">
+              {message}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>

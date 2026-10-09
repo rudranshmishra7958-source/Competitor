@@ -1,9 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { CalendarCheck, ChartColumn, ScanLine } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
 import { EmptyState, PageHeader } from "@/components/PageHeader";
-import { examStatus, getAttempt, loadStore, questionsForExam, submissionsForStudent } from "@/lib/exam-store";
+import { ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import {
+  examStatus,
+  getAttempt,
+  gradeAttempt,
+  loadStore,
+  questionsForExam,
+  submissionsForStudent,
+} from "@/lib/exam-store";
 import { readClientSession } from "@/lib/session";
 import type { Exam } from "@exam/shared";
 
@@ -31,26 +41,46 @@ export default function PastExamsPage() {
       {exams.length === 0 ? (
         <EmptyState>No past exams in this browser store.</EmptyState>
       ) : (
-        <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+        <ul className="grid gap-3">
           {exams.map((exam) => {
             const hasWritten = questionsForExam(exam).some((q) => q.kind === "written");
+            const attempt = userId ? getAttempt(exam.id, userId) : undefined;
+            const result = attempt?.submittedAt ? gradeAttempt(exam, attempt.id) : null;
             return (
-              <li key={exam.id} className="flex items-center justify-between px-4 py-3">
-                <div>
-                  <p className="font-medium">{exam.title}</p>
-                  <p className="text-sm text-[var(--muted)]">
-                    {exam.startsAt ? new Date(exam.startsAt).toLocaleString() : "—"}
-                  </p>
+              <Card as="li" key={exam.id} className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-10 place-items-center rounded-xl bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]">
+                    <CalendarCheck className="size-5" aria-hidden />
+                  </span>
+                  <div>
+                    <p className="font-medium">{exam.title}</p>
+                    <p className="text-sm text-[var(--muted)]">
+                      {exam.startsAt ? new Date(exam.startsAt).toLocaleString() : "—"}
+                    </p>
+                  </div>
                 </div>
-                {hasWritten && userId ? (
-                  <Link
-                    href={`/student/exams/${exam.id}/written`}
-                    className="text-sm text-[var(--accent)] underline"
-                  >
-                    Scan history
-                  </Link>
+                <div className="flex flex-wrap items-center gap-2">
+                {result && result.gradable > 0 ? (
+                  <Badge tone={result.percent >= 50 ? "low" : "high"}>
+                    {result.correct}/{result.gradable} · {result.percent}%
+                  </Badge>
+                ) : !attempt ? (
+                  <Badge>Not attempted</Badge>
                 ) : null}
-              </li>
+                {result ? (
+                  <ButtonLink href={`/student/exams/${exam.id}/submitted`} variant="secondary" size="sm">
+                    <ChartColumn className="size-4" aria-hidden />
+                    Result
+                  </ButtonLink>
+                ) : null}
+                {hasWritten && userId ? (
+                  <ButtonLink href={`/student/exams/${exam.id}/written`} variant="secondary" size="sm">
+                    <ScanLine className="size-4" aria-hidden />
+                    Scan history
+                  </ButtonLink>
+                ) : null}
+                </div>
+              </Card>
             );
           })}
         </ul>

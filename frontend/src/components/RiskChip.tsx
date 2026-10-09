@@ -1,10 +1,6 @@
+import { CircleCheck, OctagonAlert, TriangleAlert } from "lucide-react";
 import type { RiskLevel } from "@exam/shared";
-
-const styles: Record<RiskLevel, string> = {
-  low: "bg-[var(--risk-low-bg)] text-[var(--risk-low-fg)]",
-  medium: "bg-[var(--risk-medium-bg)] text-[var(--risk-medium-fg)]",
-  high: "bg-[var(--risk-high-bg)] text-[var(--risk-high-fg)]",
-};
+import { Badge } from "@/components/ui/Badge";
 
 const labels: Record<RiskLevel, string> = {
   low: "Low",
@@ -12,12 +8,16 @@ const labels: Record<RiskLevel, string> = {
   high: "High",
 };
 
+const icons: Record<RiskLevel, React.ReactNode> = {
+  low: <CircleCheck className="size-3.5" aria-hidden />,
+  medium: <TriangleAlert className="size-3.5" aria-hidden />,
+  high: <OctagonAlert className="size-3.5" aria-hidden />,
+};
+
 export function RiskChip({ level }: { level: RiskLevel }) {
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[level]}`}
-    >
+    <Badge tone={level} icon={icons[level]}>
       {labels[level]}
-    </span>
+    </Badge>
   );
 }

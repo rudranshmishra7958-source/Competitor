@@ -133,7 +133,20 @@ export interface WrittenQuestion {
   ocrText: null;
 }
 
-export type Question = McqQuestion | WrittenQuestion;
+/** Typed short answer, auto-graded against accepted answers (numeric answers allow a tolerance). */
+export interface ShortAnswerQuestion {
+  id: string;
+  kind: "short";
+  prompt: string;
+  acceptedAnswers: string[];
+  numeric?: boolean;
+  tolerance?: number;
+}
+
+export type Question = McqQuestion | WrittenQuestion | ShortAnswerQuestion;
+
+/** Questions answered on the main exam page (not photographed). */
+export type AutoGradedQuestion = McqQuestion | ShortAnswerQuestion;
 
 export interface Attempt {
   id: string;
@@ -148,7 +161,10 @@ export interface Attempt {
 export interface Answer {
   attemptId: string;
   questionId: string;
+  /** Option id for MCQ; empty for short answers. */
   selectedOptionId: string;
+  /** Typed response for short-answer questions. */
+  text?: string;
 }
 
 export interface ExamSessionContract {

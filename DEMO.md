@@ -22,9 +22,12 @@ Demo password for every account: `password`
 
 | Role | Login |
 | --- | --- |
-| Student | `STU001` |
-| Second student | `STU002` |
-| Proctor | `FAC001` |
+| Students | `STU001` – `STU008` (or emails such as `student@college.edu`, `meera@college.edu`) |
+| Proctors | `FAC001` (`faculty@college.edu`), `FAC002` (`proctor@college.edu`) |
+
+`STU003`–`STU008` are also used by the proctor's **Simulate student** tool, so keep `STU001`/`STU002` for live demos.
+
+The API's `/auth/login` is required to sign in. For an offline-only demo, start the frontend with `NEXT_PUBLIC_DEMO_MODE=1`.
 
 ## What judges should notice
 
@@ -55,6 +58,35 @@ Other live mocks on Upcoming exams:
 | Computer networks (MCQ + scan) | Two MCQs, then photograph a TCP handshake | Optional |
 | Discrete math scans (agent required) | Two photographed proofs | Required before the page opens fully |
 | Data structures (MCQ + scan, agent required) | Two MCQs, then photograph a BST | Required before answers unlock |
+
+## No-hands demo: Simulate student
+
+On **Live Monitoring**, the **Demo tools** bar creates scripted sessions without a second browser:
+
+| Scenario | What it shows |
+| --- | --- |
+| Tab hopper | Leaving the exam tab and navigating away, scored under Enforce |
+| Copy / paste | Clipboard activity (never the text itself) |
+| Prohibited apps + second display | Agent reports `discord.exe`, `chatgpt.exe`, two displays, plus DevTools: lands on High |
+| Clean session | Low risk baseline |
+
+A toast appears when a session reaches High. Switch between **Grid** and **Table**, filter by risk, then open a card to review. **Clear simulated** removes all simulated sessions. The API only exposes this when `DEMO_MODE` is on (the default for development).
+
+## Results and exam formats
+
+After submitting, students see a score ring and per-question review. Multiple-choice and short answers are graded automatically. Scans stay "awaiting faculty grading". **Past exams** shows each score.
+
+| Exam | Format |
+| --- | --- |
+| Database systems | Multiple choice + typed short answers |
+| Quantitative aptitude | Numeric answers (with tolerance, e.g. √2 ≈ 1.41) |
+| Academic integrity | True / false |
+| Python programming | Multiple choice + short answer + photographed code |
+| Practice quiz | Everything Allow-but-log, so nothing is scored |
+| Computer architecture final | Always opens tomorrow (shows the scheduled state) |
+| Intro to programming | Closed last week (shows in Past exams) |
+
+Faculty can add short-answer questions (text or numeric with a tolerance) in the exam builder.
 
 ## Python agent (optional)
 

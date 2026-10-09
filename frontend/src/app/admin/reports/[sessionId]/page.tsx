@@ -1,12 +1,16 @@
 "use client";
 
-import Link from "next/link";
+import { ArrowRight, Download, FileText } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { IntegrityReport } from "@exam/shared";
 import { EventTimelineList } from "@/components/EventTimelineList";
 import { PageHeader } from "@/components/PageHeader";
 import { RiskChip } from "@/components/RiskChip";
+import { Badge } from "@/components/ui/Badge";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { downloadReport, fetchReport } from "@/lib/api";
 import { assuranceLabel, reviewLabel } from "@/lib/assurance-labels";
 import { getExam } from "@/lib/exam-store";
@@ -31,7 +35,7 @@ export default function IntegrityReportPage() {
     return (
       <>
         <PageHeader title="Integrity report" />
-        <p className="text-sm text-[var(--muted)]">Loading report…</p>
+        <Skeleton className="h-40" />
       </>
     );
   }
@@ -48,24 +52,20 @@ export default function IntegrityReportPage() {
         description={`${examTitle}. Evidence for a human reviewer—not an automatic accusation.`}
       />
       <div className="mb-4">
-        <Link
-          href={`/admin/live/${encodeURIComponent(report.sessionId)}`}
-          className="text-sm font-medium text-[var(--accent)] underline-offset-2 hover:underline"
-        >
+        <ButtonLink href={`/admin/live/${encodeURIComponent(report.sessionId)}`} variant="secondary" size="sm">
           Open live timeline and set Flagged or Cleared
-        </Link>
+          <ArrowRight className="size-4" aria-hidden />
+        </ButtonLink>
       </div>
 
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm">
+      <Card strong>
         <div className="flex flex-wrap items-center gap-3">
           <RiskChip level={report.risk} />
-          <span className="rounded-full bg-[var(--exam-bg)] px-2.5 py-0.5 text-xs font-medium text-[var(--cyan)]">
-            {reviewLabel(report.reviewStatus)}
-          </span>
+          <Badge tone="accent">{reviewLabel(report.reviewStatus)}</Badge>
           <span className="text-sm text-[var(--muted)]">{assuranceLabel(report.assurance)}</span>
         </div>
         <p className="mt-4 text-base leading-relaxed">{report.summary}</p>
-      </div>
+      </Card>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Metric label="Browser score" value={report.breakdown.browser} />
@@ -75,22 +75,20 @@ export default function IntegrityReportPage() {
         <Metric label="Events" value={`${scored} scored · ${logged} log-only`} wide />
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => download("pdf")}
-          className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white"
-        >
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        <Button onClick={() => download("pdf")}>
+          <FileText className="size-4" aria-hidden />
           Export PDF
-        </button>
-        <button
-          type="button"
-          onClick={() => download("csv")}
-          className="rounded-md border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium"
-        >
+        </Button>
+        <Button variant="secondary" onClick={() => download("csv")}>
+          <Download className="size-4" aria-hidden />
           Export CSV
-        </button>
-        {message ? <span className="self-center text-sm text-[var(--muted)]">{message}</span> : null}
+        </Button>
+        {message ? (
+          <span className="text-sm text-[var(--muted)]" role="status">
+            {message}
+          </span>
+        ) : null}
       </div>
 
       <section className="mt-8">
@@ -116,7 +114,7 @@ export default function IntegrityReportPage() {
             {report.correlations.map((hit) => (
               <li
                 key={`${hit.rule}-${hit.label}-${hit.eventIds.join("-")}`}
-                className="rounded-lg border border-red-200 bg-red-50 px-4 py-3"
+                className="glass rounded-2xl border-l-4 !border-l-[var(--risk-high-fg)] px-4 py-3"
               >
                 <p className="font-medium">{hit.label}</p>
                 <p className="mt-1 text-xs text-[var(--muted)]">
@@ -135,11 +133,9 @@ export default function IntegrityReportPage() {
 
 function Metric({ label, value, wide }: { label: string; value: number | string; wide?: boolean }) {
   return (
-    <div
-      className={`rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 ${wide ? "sm:col-span-2 lg:col-span-1" : ""}`}
-    >
+    <Card className={`p-4 ${wide ? "sm:col-span-2 lg:col-span-1" : ""}`}>
       <p className="text-xs text-[var(--muted)]">{label}</p>
       <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
-    </div>
+    </Card>
   );
 }

@@ -2,7 +2,11 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { CheckCheck, Radio } from "lucide-react";
 import type { Attempt, Exam, WrittenQuestion } from "@exam/shared";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { WrittenCapture } from "@/components/WrittenCapture";
 import { BrowserMonitor } from "@/components/BrowserMonitor";
 import { AgentSetup } from "@/components/AgentSetup";
@@ -36,7 +40,7 @@ export default function WrittenExamPage() {
       router.replace("/student/upcoming");
       return;
     }
-    const mcqCount = questionsForExam(found).filter((q) => q.kind === "mcq").length;
+    const mcqCount = questionsForExam(found).filter((q) => q.kind === "mcq" || q.kind === "short").length;
     let current = getAttempt(found.id, session.userId);
     if (mcqCount > 0 && !current?.submittedAt) {
       router.replace(`/student/exams/${found.id}/take`);
@@ -54,28 +58,21 @@ export default function WrittenExamPage() {
   }, [params.id, router]);
 
   if (!exam || !attempt || !studentId) {
-    return <p className="text-sm text-[var(--muted)]">Loading written questions…</p>;
+    return <Skeleton className="h-64" />;
   }
 
   if (questions.length === 0) {
-    return <p className="text-sm text-[var(--muted)]">This exam has no written prompts.</p>;
+    return <p className="glass rounded-2xl p-6 text-sm text-[var(--muted)]">This exam has no written prompts.</p>;
   }
 
   const remaining = Date.parse(attempt.expiresAt) - Date.now();
   const open = remaining > 0;
 
   return (
-    <div>
+    <div className="exam-room rise rounded-3xl p-4 sm:p-6">
       {integrity.notice ? (
         <IntegrityViolationAlert notice={integrity.notice} onDismiss={integrity.dismiss} />
       ) : null}
-      <AgentSetup
-        examId={exam.id}
-        studentId={studentId}
-        sessionId={attempt.id}
-        required={exam.policy.requireEndpointAgent}
-        connected={integrity.endpointConnected}
-      />
       <BrowserMonitor
         examId={exam.id}
         studentId={studentId}
@@ -83,17 +80,30 @@ export default function WrittenExamPage() {
         policy={exam.policy}
         onViolation={integrity.reportViolation}
       />
-      <p className="mb-4 text-sm font-medium text-[var(--cyan)]">
-        MONITOR ON · Integrity score {integrity.score} (for review)
-      </p>
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">{exam.title}</h1>
-        <p className="text-sm text-[var(--muted)]">Written answers</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <Badge tone="low" icon={<Radio className="size-3.5" aria-hidden />}>
+            Monitor on
+          </Badge>
+          <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">{exam.title}</h1>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            Written answers · Integrity score {integrity.score} (for review)
+          </p>
+        </div>
       </div>
-      <p className="mb-4 text-sm text-[var(--muted)]">
+      <div className="mt-4">
+        <AgentSetup
+          examId={exam.id}
+          studentId={studentId}
+          sessionId={attempt.id}
+          required={exam.policy.requireEndpointAgent}
+          connected={integrity.endpointConnected}
+        />
+      </div>
+      <p className="mb-4 mt-4 text-sm text-[var(--muted)]">
         Each photo is stored as a new submission. Admins see the full history, not a replacement.
       </p>
-      <div className="space-y-6">
+      <div className="space-y-5">
         {questions.map((q) => (
           <WrittenCapture
             key={q.id}
@@ -105,17 +115,19 @@ export default function WrittenExamPage() {
           />
         ))}
       </div>
-      <button
-        type="button"
-        onClick={() => {
-          submitAttempt(attempt.id);
-          void markSessionSubmitted(attempt.id);
-          router.push(`/student/exams/${exam.id}/submitted`);
-        }}
-        className="mt-6 inline-block rounded-md bg-[var(--accent)] px-4 py-2 text-sm text-white"
-      >
-        Done
-      </button>
+      <div className="mt-6 flex justify-end">
+        <Button
+          size="lg"
+          onClick={() => {
+            submitAttempt(attempt.id);
+            void markSessionSubmitted(attempt.id);
+            router.push(`/student/exams/${exam.id}/submitted`);
+          }}
+        >
+          <CheckCheck className="size-5" aria-hidden />
+          Done
+        </Button>
+      </div>
     </div>
   );
 }

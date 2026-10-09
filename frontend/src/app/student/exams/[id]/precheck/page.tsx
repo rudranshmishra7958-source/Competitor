@@ -2,7 +2,11 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Eye, Maximize, PlayCircle, ShieldCheck, Server, EyeOff } from "lucide-react";
 import type { Exam } from "@exam/shared";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { examStatus, getAttempt, getExam, isAssigned, questionsForExam, startAttempt } from "@/lib/exam-store";
 import { readClientSession } from "@/lib/session";
 import { registerExamSession } from "@/lib/api";
@@ -28,14 +32,15 @@ export default function PrecheckPage() {
   }, [params.id, router]);
 
   if (!ready) {
-    return <p className="text-sm text-[var(--muted)]">Loading exam…</p>;
+    return <Skeleton className="h-64" />;
   }
 
   if (!exam) {
-    return <p className="text-sm text-[var(--muted)]">Exam not found.</p>;
+    return <p className="glass rounded-2xl p-6 text-sm text-[var(--muted)]">Exam not found.</p>;
   }
 
   const mcqCount = questionsForExam(exam).filter((q) => q.kind === "mcq").length;
+  const shortCount = questionsForExam(exam).filter((q) => q.kind === "short").length;
   const writtenCount = questionsForExam(exam).filter((q) => q.kind === "written").length;
 
   async function requestFullscreen() {
@@ -91,7 +96,7 @@ export default function PrecheckPage() {
     if (!registered) {
       setError("Server registration is unavailable. Continuing in local, lower-assurance mode.");
     }
-    if (mcqCount === 0) {
+    if (mcqCount + shortCount === 0) {
       router.push(`/student/exams/${currentExam.id}/written`);
       return;
     }
@@ -101,61 +106,75 @@ export default function PrecheckPage() {
   const checks = [
     {
       title: "What is recorded",
+      Icon: Eye,
       body: "Tab leave, focus, fullscreen, clipboard actions (not the text), and a DevTools signal. If you connect the agent: program name, display count, and network state.",
     },
     {
       title: "What is refused",
+      Icon: EyeOff,
       body: "No face, voice, keystrokes, window titles, URLs, screenshots, or files. A second phone is out of scope.",
     },
     {
       title: "Server session",
+      Icon: Server,
       body: "Start registers this attempt on the API so the proctor can see events. If the API is down, the exam still opens in lower-assurance mode.",
     },
   ];
 
   return (
-    <div className="rounded-2xl bg-[var(--exam-bg)] px-6 py-6 text-[#e8eaed]">
-      <p className="text-xs font-semibold tracking-wide text-[var(--cyan)]">BEFORE YOU START</p>
-      <h1 className="mt-2 text-3xl font-semibold text-white">{exam.title}</h1>
-      <p className="mt-2 max-w-2xl text-[var(--text-muted)]">
+    <div className="exam-room rise rounded-3xl p-5 sm:p-8">
+      <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--nav-active-fg)]">
+        <ShieldCheck className="size-4" aria-hidden />
+        Before you start
+      </p>
+      <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">{exam.title}</h1>
+      <p className="mt-3 max-w-2xl text-[var(--muted)]">
         {mcqCount} multiple-choice {mcqCount === 1 ? "question" : "questions"}
+        {shortCount ? `, ${shortCount} short answer${shortCount === 1 ? "" : "s"}` : ""}
         {writtenCount ? ` and ${writtenCount} written prompt${writtenCount === 1 ? "" : "s"}` : ""}.
         The score is evidence for a person, not an automatic fail.
       </p>
-      <ul className="mt-6 space-y-3">
-        {checks.map((item) => (
-          <li key={item.title} className="rounded-xl border border-white/10 bg-[var(--panel)] p-4">
-            <p className="font-semibold text-[var(--lime)]">{item.title}</p>
-            <p className="mt-1 text-base leading-relaxed">{item.body}</p>
-          </li>
+      <ul className="mt-6 grid gap-3">
+        {checks.map(({ title, body, Icon }) => (
+          <Card as="li" key={title} className="flex gap-4">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]">
+              <Icon className="size-5" aria-hidden />
+            </span>
+            <div>
+              <p className="font-semibold">{title}</p>
+              <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">{body}</p>
+            </div>
+          </Card>
         ))}
-        <li className="rounded-xl border border-white/10 bg-[var(--panel)] p-4">
-          <p className="font-semibold text-[var(--lime)]">Fullscreen</p>
-          <p className="mt-1 text-base">
-            Policy: {exam.policy.fullscreen.replace(/_/g, " ")}. {fullscreenOk ? "Fullscreen is on." : "Fullscreen is off."}
-          </p>
-          <button
-            type="button"
-            className="mt-3 rounded-md border border-[var(--cyan)] px-3 py-1.5 text-[var(--cyan)]"
-            onClick={requestFullscreen}
-          >
-            Enter fullscreen
-          </button>
-          <p className="mt-3 break-all text-xs text-[var(--text-muted)]">{ua || "Checking browser…"}</p>
-        </li>
+        <Card as="li" className="flex gap-4">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]">
+            <Maximize className="size-5" aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <p className="font-semibold">Fullscreen</p>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              Policy: {exam.policy.fullscreen.replace(/_/g, " ")}.{" "}
+              {fullscreenOk ? "Fullscreen is on." : "Fullscreen is off."}
+            </p>
+            <Button variant="secondary" size="sm" className="mt-3" onClick={requestFullscreen}>
+              Enter fullscreen
+            </Button>
+            <p className="mt-3 break-all text-xs text-[var(--muted)]">{ua || "Checking browser…"}</p>
+          </div>
+        </Card>
       </ul>
       {error ? (
-        <p className="mt-4 text-sm text-[#ffb4b4]" role="alert">
+        <p
+          className="mt-4 rounded-xl bg-[var(--risk-high-bg)] px-3 py-2 text-sm text-[var(--risk-high-fg)]"
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
-      <button
-        type="button"
-        className="mt-6 rounded-md bg-[var(--cyan)] px-5 py-2.5 text-base font-semibold text-[var(--exam-bg)]"
-        onClick={start}
-      >
+      <Button size="lg" className="mt-6 w-full sm:w-auto" onClick={start}>
+        <PlayCircle className="size-5" aria-hidden />
         Start exam
-      </button>
+      </Button>
     </div>
   );
 }

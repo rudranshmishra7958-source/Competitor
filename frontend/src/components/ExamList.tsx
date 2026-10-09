@@ -1,11 +1,21 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Pencil, Plus, Search } from "lucide-react";
 import { EmptyState, PageHeader } from "@/components/PageHeader";
-import { canEditExam, examStatus, loadStore } from "@/lib/exam-store";
+import { Badge } from "@/components/ui/Badge";
+import { ButtonLink } from "@/components/ui/Button";
+import { TableWrap, td, th } from "@/components/ui/Table";
+import { canEditExam, examFormatLabel, examStatus, loadStore } from "@/lib/exam-store";
 import type { Exam } from "@exam/shared";
 import { studentRoster } from "@/lib/exam-store";
+
+const statusTone = {
+  live: "low",
+  scheduled: "accent",
+  draft: "neutral",
+  completed: "neutral",
+} as const;
 
 export function ExamList() {
   const [exams, setExams] = useState<Exam[]>([]);
@@ -21,57 +31,72 @@ export function ExamList() {
 
   return (
     <>
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <PageHeader title="Exams" description="Create, schedule, and inspect assessments." />
-        <Link
-          href="/admin/exams/new"
-          className="shrink-0 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white"
-        >
-          Create exam
-        </Link>
-      </div>
+      <PageHeader
+        title="Exams"
+        description="Create, schedule, and inspect assessments."
+        actions={
+          <ButtonLink href="/admin/exams/new">
+            <Plus className="size-4" aria-hidden />
+            Create exam
+          </ButtonLink>
+        }
+      />
       {exams.length === 0 ? (
         <EmptyState>No exams yet.</EmptyState>
       ) : (
-        <table className="w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] text-left text-sm">
-          <thead className="bg-[var(--background)] text-[var(--muted)]">
+        <TableWrap caption="Exams">
+          <thead>
             <tr>
-              <th className="px-4 py-2 font-medium">Title</th>
-              <th className="px-4 py-2 font-medium">Type</th>
-              <th className="px-4 py-2 font-medium">Status</th>
-              <th className="px-4 py-2 font-medium">Start</th>
-              <th className="px-4 py-2 font-medium">Assigned</th>
-              <th className="px-4 py-2 font-medium" />
+              <th scope="col" className={th}>Title</th>
+              <th scope="col" className={th}>Type</th>
+              <th scope="col" className={th}>Status</th>
+              <th scope="col" className={th}>Start</th>
+              <th scope="col" className={th}>Assigned</th>
+              <th scope="col" className={th}>
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
             {exams.map((exam) => {
               const status = examStatus(exam);
-              const href = canEditExam(exam) ? `/admin/exams/${exam.id}/edit` : `/admin/exams/${exam.id}`;
+              const editable = canEditExam(exam);
+              const href = editable ? `/admin/exams/${exam.id}/edit` : `/admin/exams/${exam.id}`;
               return (
-                <tr key={exam.id} className="border-t border-[var(--border)]">
-                  <td className="px-4 py-2">{exam.title}</td>
-                  <td className="px-4 py-2">
-                    {exam.type === "mcq" ? "MCQ" : exam.type === "written" ? "Scan" : "MCQ + scan"}
-                    {exam.policy.requireEndpointAgent ? " · Agent required" : " · Browser only"}
+                <tr key={exam.id} className="hover:bg-[var(--nav-active-bg)]">
+                  <td className={`${td} font-medium`}>{exam.title}</td>
+                  <td className={td}>
+                    {examFormatLabel(exam)}
+                    <span className="block text-xs text-[var(--muted)]">
+                      {exam.policy.requireEndpointAgent ? "Agent required" : "Browser only"}
+                    </span>
                   </td>
-                  <td className="px-4 py-2 capitalize">{status}</td>
-                  <td className="px-4 py-2">
+                  <td className={td}>
+                    <Badge tone={statusTone[status as keyof typeof statusTone] ?? "neutral"} className="capitalize">
+                      {status}
+                    </Badge>
+                  </td>
+                  <td className={td}>
                     {exam.startsAt ? new Date(exam.startsAt).toLocaleString() : "—"}
                   </td>
-                  <td className="px-4 py-2">
+                  <td className={td}>
                     {exam.assignedStudentIds.map((id) => names[id] ?? id).join(", ") || "—"}
                   </td>
-                  <td className="px-4 py-2">
-                    <Link href={href} className="text-[var(--accent)] underline">
-                      {canEditExam(exam) ? "Edit" : "Inspect"}
-                    </Link>
+                  <td className={td}>
+                    <ButtonLink href={href} variant="ghost" size="sm">
+                      {editable ? (
+                        <Pencil className="size-4" aria-hidden />
+                      ) : (
+                        <Search className="size-4" aria-hidden />
+                      )}
+                      {editable ? "Edit" : "Inspect"}
+                    </ButtonLink>
                   </td>
                 </tr>
               );
             })}
           </tbody>
-        </table>
+        </TableWrap>
       )}
     </>
   );

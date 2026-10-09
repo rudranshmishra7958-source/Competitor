@@ -1,14 +1,24 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ArrowRight, Clock, Laptop, Lock, ShieldCheck } from "lucide-react";
 import { EmptyState, PageHeader } from "@/components/PageHeader";
-import { examStatus, getAttempt, loadStore, questionsForExam } from "@/lib/exam-store";
+import { Badge } from "@/components/ui/Badge";
+import { ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/Skeleton";
+import {
+  examFormatLabel,
+  examStatus,
+  getAttempt,
+  loadStore,
+  questionsForExam,
+} from "@/lib/exam-store";
 import { readClientSession } from "@/lib/session";
 import type { Exam } from "@exam/shared";
 
 export default function UpcomingExamsPage() {
-  const [exams, setExams] = useState<Exam[]>([]);
+  const [exams, setExams] = useState<Exam[] | null>(null);
 
   useEffect(() => {
     const session = readClientSession();
@@ -32,34 +42,62 @@ export default function UpcomingExamsPage() {
         title="Upcoming exams"
         description="Assessments assigned to your account in this browser."
       />
-      {exams.length === 0 ? (
+      {exams === null ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-44" />
+          <Skeleton className="h-44" />
+        </div>
+      ) : exams.length === 0 ? (
         <EmptyState>No upcoming exams.</EmptyState>
       ) : (
-        <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+        <ul className="grid gap-4 md:grid-cols-2">
           {exams.map((exam) => {
             const status = examStatus(exam);
-            const canStart = status === "live" || status === "scheduled";
+            const live = status === "live";
+            const started = Boolean(getAttempt(exam.id, readClientSession()?.userId ?? ""));
             return (
-              <li key={exam.id} className="flex items-center justify-between px-4 py-3">
-                <div>
-                  <p className="font-medium">{exam.title}</p>
-                  <p className="text-sm text-[var(--muted)]">
-                    {exam.type === "mcq" ? "Multiple choice" : exam.type === "written" ? "Scan answers" : "MCQ + scan"}{" "}
-                    · {exam.policy.requireEndpointAgent ? "Agent required" : "Browser only"} ·{" "}
-                    {exam.durationMinutes} min · {status}
-                  </p>
+              <Card as="li" key={exam.id} interactive className="flex flex-col">
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="text-lg font-semibold leading-snug">{exam.title}</h2>
+                  <Badge tone={live ? "low" : "accent"} className="shrink-0 capitalize">
+                    {live ? "Open now" : status === "scheduled" && exam.startsAt
+                      ? `Opens ${new Date(exam.startsAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}`
+                      : status}
+                  </Badge>
                 </div>
-                {canStart && status === "live" ? (
-                  <Link
-                    href={`/student/exams/${exam.id}/precheck`}
-                    className="text-sm text-[var(--accent)] underline"
+                <p className="mt-1 text-sm text-[var(--muted)]">
+                  {examFormatLabel(exam)}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Badge icon={<Clock className="size-3.5" aria-hidden />}>
+                    {exam.durationMinutes} min
+                  </Badge>
+                  <Badge
+                    icon={
+                      exam.policy.requireEndpointAgent ? (
+                        <ShieldCheck className="size-3.5" aria-hidden />
+                      ) : (
+                        <Laptop className="size-3.5" aria-hidden />
+                      )
+                    }
                   >
-                    {getAttempt(exam.id, readClientSession()?.userId ?? "") ? "Continue" : "Start"}
-                  </Link>
-                ) : (
-                  <span className="text-sm text-[var(--muted)]">Not open yet</span>
-                )}
-              </li>
+                    {exam.policy.requireEndpointAgent ? "Agent required" : "Browser only"}
+                  </Badge>
+                </div>
+                <div className="mt-5 pt-1">
+                  {live ? (
+                    <ButtonLink href={`/student/exams/${exam.id}/precheck`} className="w-full sm:w-auto">
+                      {started ? "Continue" : "Start"}
+                      <ArrowRight className="size-4" aria-hidden />
+                    </ButtonLink>
+                  ) : (
+                    <span className="inline-flex items-center gap-2 text-sm text-[var(--muted)]">
+                      <Lock className="size-4" aria-hidden />
+                      Not open yet
+                    </span>
+                  )}
+                </div>
+              </Card>
             );
           })}
         </ul>

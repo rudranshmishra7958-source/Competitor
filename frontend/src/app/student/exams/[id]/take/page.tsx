@@ -2,10 +2,16 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Attempt, Exam, McqQuestion } from "@exam/shared";
+import { CheckCircle2, Radio, Timer } from "lucide-react";
+import type { Attempt, AutoGradedQuestion, Exam } from "@exam/shared";
 import { BrowserMonitor } from "@/components/BrowserMonitor";
 import { AgentSetup } from "@/components/AgentSetup";
 import { IntegrityViolationAlert } from "@/components/IntegrityViolationAlert";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Modal } from "@/components/ui/Modal";
+import { Skeleton } from "@/components/ui/Skeleton";
 import {
   answersForAttempt,
   examStatus,
@@ -14,6 +20,7 @@ import {
   isAssigned,
   questionsForExam,
   saveAnswer,
+  saveTextAnswer,
   seededShuffle,
   startAttempt,
   submitAttempt,
@@ -35,7 +42,7 @@ export default function TakeExamPage() {
   const router = useRouter();
   const [exam, setExam] = useState<Exam | null>(null);
   const [attempt, setAttempt] = useState<Attempt | null>(null);
-  const [questions, setQuestions] = useState<McqQuestion[]>([]);
+  const [questions, setQuestions] = useState<AutoGradedQuestion[]>([]);
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [remainingMs, setRemainingMs] = useState(0);
   const [studentId, setStudentId] = useState<string | null>(null);
@@ -85,18 +92,19 @@ export default function TakeExamPage() {
     setAttempt(current);
     setStudentId(session.userId);
     setAgentReady(!found.policy.requireEndpointAgent);
-    const mcq = questionsForExam(found).filter((q): q is McqQuestion => q.kind === "mcq");
+    const onPage = questionsForExam(found).filter(
+      (q): q is AutoGradedQuestion => q.kind === "mcq" || q.kind === "short",
+    );
     const seed = `${found.id}:${session.userId}`;
-    const ordered = found.policy.randomizeQuestionOrder ? seededShuffle(mcq, seed) : mcq;
-    const withOpts = ordered.map((q) => ({
-      ...q,
-      options: found.policy.randomizeOptionOrder
-        ? seededShuffle(q.options, `${seed}:${q.id}`)
-        : q.options,
-    }));
+    const ordered = found.policy.randomizeQuestionOrder ? seededShuffle(onPage, seed) : onPage;
+    const withOpts = ordered.map((q) =>
+      q.kind === "mcq" && found.policy.randomizeOptionOrder
+        ? { ...q, options: seededShuffle(q.options, `${seed}:${q.id}`) }
+        : q,
+    );
     setQuestions(withOpts);
     const saved: Record<string, string> = {};
-    for (const a of answersForAttempt(current.id)) saved[a.questionId] = a.selectedOptionId;
+    for (const a of answersForAttempt(current.id)) saved[a.questionId] = a.text ?? a.selectedOptionId;
     setSelected(saved);
   }, [params.id, router]);
 
@@ -127,7 +135,7 @@ export default function TakeExamPage() {
   }, [exam]);
 
   if (!exam || !attempt) {
-    return <p className="text-sm text-[var(--muted)]">Loading exam…</p>;
+    return <Skeleton className="h-64" />;
   }
 
   function pick(questionId: string, optionId: string) {
@@ -136,8 +144,18 @@ export default function TakeExamPage() {
     saveAnswer(attempt.id, questionId, optionId);
   }
 
+  function typeAnswer(questionId: string, text: string) {
+    if (!attempt) return;
+    setSelected((prev) => ({ ...prev, [questionId]: text }));
+    saveTextAnswer(attempt.id, questionId, text);
+  }
+
+  const answered = questions.filter((q) => selected[q.id]?.trim()).length;
+  const progress = questions.length ? Math.round((answered / questions.length) * 100) : 0;
+  const lowTime = remainingMs > 0 && remainingMs < 5 * 60 * 1000;
+
   return (
-    <div className="-mx-2 rounded-2xl bg-[var(--exam-bg)] px-5 py-5 text-[#e8eaed]">
+    <div className="exam-room rise rounded-3xl p-4 sm:p-6">
       {integrity.notice ? (
         <IntegrityViolationAlert notice={integrity.notice} onDismiss={integrity.dismiss} />
       ) : null}
@@ -151,23 +169,75 @@ export default function TakeExamPage() {
           onViolation={integrity.reportViolation}
         />
       ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
-        <div>
-          <p className="text-xs font-semibold tracking-wide text-[var(--lime)]">MONITOR ON</p>
-          <h1 className="mt-1 text-2xl font-semibold text-white">{exam.title}</h1>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">
-            {eventCount} browser {eventCount === 1 ? "event" : "events"} · Integrity score{" "}
-            {integrity.score} (for review) ·{" "}
-            {agentConnected ? "Agent connected" : exam.policy.requireEndpointAgent ? "Agent required" : "Agent optional"}
+
+      <div className="glass-strong z-20 sm:sticky sm:top-20 rounded-2xl p-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <Badge tone="low" icon={<Radio className="size-3.5" aria-hidden />}>
+              Monitor on
+            </Badge>
+            <h1 className="mt-2 truncate text-xl font-semibold sm:text-2xl">{exam.title}</h1>
+            <p className="mt-1 text-xs text-[var(--muted)] sm:text-sm">
+              {eventCount} browser {eventCount === 1 ? "event" : "events"} · Integrity score{" "}
+              {integrity.score} (for review) ·{" "}
+              {agentConnected
+                ? "Agent connected"
+                : exam.policy.requireEndpointAgent
+                  ? "Agent required"
+                  : "Agent optional"}
+            </p>
+          </div>
+          <p
+            className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 font-mono text-2xl tabular-nums ${
+              lowTime
+                ? "border-[var(--risk-high-fg)] text-[var(--risk-high-fg)]"
+                : "border-[var(--nav-active-fg)] text-[var(--nav-active-fg)]"
+            }`}
+            aria-live="polite"
+          >
+            <Timer className="size-5" aria-hidden />
+            {formatRemaining(remainingMs)}
           </p>
         </div>
-        <p
-          className="rounded-lg border border-[var(--cyan)] px-4 py-2 font-mono text-2xl text-[var(--cyan)]"
-          aria-live="polite"
-        >
-          {formatRemaining(remainingMs)}
-        </p>
+        <div className="mt-4">
+          <div className="mb-1 flex justify-between text-xs text-[var(--muted)]">
+            <span>
+              {answered} of {questions.length} answered
+            </span>
+            <span>{progress}%</span>
+          </div>
+          <div
+            className="h-2 overflow-hidden rounded-full bg-[var(--border)]"
+            role="progressbar"
+            aria-valuenow={progress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Answered questions"
+          >
+            <div
+              className="h-full rounded-full bg-[image:var(--accent-grad)] transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <nav aria-label="Question navigator" className="mt-3 flex flex-wrap gap-1.5">
+            {questions.map((q, i) => (
+              <a
+                key={q.id}
+                href={`#q-${q.id}`}
+                aria-label={`Question ${i + 1}${selected[q.id]?.trim() ? ", answered" : ", unanswered"}`}
+                className={`grid size-8 place-items-center rounded-lg text-xs font-medium ${
+                  selected[q.id]?.trim()
+                    ? "btn-grad"
+                    : "border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)]"
+                }`}
+              >
+                {i + 1}
+              </a>
+            ))}
+          </nav>
+        </div>
       </div>
+
       {studentId ? (
         <div className="mt-4">
           <AgentSetup
@@ -180,75 +250,84 @@ export default function TakeExamPage() {
         </div>
       ) : null}
       {writtenNote ? (
-        <p className="mt-4 text-sm text-[var(--text-muted)]">
-          Written prompts come after these questions.
-        </p>
+        <p className="mt-4 text-sm text-[var(--muted)]">Written prompts come after these questions.</p>
       ) : null}
+
       <ol className="mt-6 space-y-4">
         {questions.map((q, i) => (
-          <li key={q.id} className="rounded-xl border border-white/10 bg-[var(--panel)] p-5">
-            <p className="text-lg font-medium leading-snug text-white">
-              {i + 1}. {q.prompt}
+          <Card as="li" key={q.id} id={`q-${q.id}`} className="scroll-mt-48 sm:p-6">
+            <p className="text-lg font-medium leading-snug">
+              <span className="mr-2 text-[var(--nav-active-fg)]">{i + 1}.</span>
+              {q.prompt}
             </p>
-            <ul className="mt-4 space-y-2">
+            {q.kind === "short" ? (
+              <label className="mt-4 block text-sm">
+                <span className="text-[var(--muted)]">
+                  {q.numeric ? "Type a number" : "Type a short answer"}
+                </span>
+                <input
+                  type="text"
+                  inputMode={q.numeric ? "decimal" : "text"}
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={selected[q.id] ?? ""}
+                  onChange={(e) => typeAnswer(q.id, e.target.value)}
+                  disabled={!agentReady}
+                  className="mt-1.5 min-h-12 w-full rounded-xl border border-[var(--border)] px-4 text-base"
+                />
+              </label>
+            ) : (
+            <ul className="mt-4 space-y-2.5">
               {q.options.map((opt) => {
                 const on = selected[q.id] === opt.id;
                 return (
                   <li key={opt.id}>
                     <label
-                      className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 text-base ${
+                      className={`flex min-h-12 cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-base transition-colors focus-within:ring-2 focus-within:ring-[var(--ring)] ${
                         on
-                          ? "border-[var(--cyan)] bg-[#0b2a33] text-white"
-                          : "border-white/10 text-[#e8eaed] hover:border-[var(--cyan)]"
-                      }`}
+                          ? "border-[var(--accent)] bg-[var(--nav-active-bg)]"
+                          : "border-[var(--border)] hover:border-[var(--accent)]"
+                      } ${agentReady ? "" : "cursor-not-allowed opacity-60"}`}
                     >
                       <input
                         type="radio"
                         name={q.id}
-                        className="mt-1"
+                        className="mt-1 size-4"
                         checked={on}
                         onChange={() => pick(q.id, opt.id)}
                         disabled={!agentReady}
                       />
-                      <span>{opt.text}</span>
+                      <span className="flex-1">{opt.text}</span>
+                      {on ? (
+                        <CheckCircle2 className="size-5 shrink-0 text-[var(--nav-active-fg)]" aria-hidden />
+                      ) : null}
                     </label>
                   </li>
                 );
               })}
             </ul>
-          </li>
+            )}
+          </Card>
         ))}
       </ol>
-      {confirming ? (
-        <div className="mt-6 rounded-xl border border-[var(--cyan)] bg-[var(--panel)] p-4">
-          <p>Submit this attempt? You cannot change answers after this.</p>
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
-              className="rounded-md bg-[var(--cyan)] px-4 py-2 font-medium text-[var(--exam-bg)]"
-              onClick={() => finish(attempt.id)}
-            >
-              Confirm submit
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-white/20 px-4 py-2"
-              onClick={() => setConfirming(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <button
-          type="button"
-          className="mt-6 rounded-md bg-[var(--cyan)] px-5 py-2.5 text-base font-semibold text-[var(--exam-bg)] disabled:opacity-50"
-          onClick={() => setConfirming(true)}
-          disabled={!agentReady}
-        >
+
+      <div className="mt-6 flex justify-end">
+        <Button size="lg" onClick={() => setConfirming(true)} disabled={!agentReady}>
           Submit
-        </button>
-      )}
+        </Button>
+      </div>
+
+      <Modal open={confirming} onClose={() => setConfirming(false)} title="Submit this attempt?">
+        <p className="text-sm text-[var(--muted)]">
+          You cannot change answers after this. {answered} of {questions.length} questions answered.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setConfirming(false)}>
+            Cancel
+          </Button>
+          <Button onClick={() => finish(attempt.id)}>Confirm submit</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

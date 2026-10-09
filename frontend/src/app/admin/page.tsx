@@ -1,11 +1,25 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ArrowRight, Radar, FilePlus2, BarChart3 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { RiskChip } from "@/components/RiskChip";
+import { ButtonLink } from "@/components/ui/Button";
+import { Card, StatCard } from "@/components/ui/Card";
 import { fetchLiveBoard } from "@/lib/api";
+import { CircleCheck, OctagonAlert, TriangleAlert } from "lucide-react";
 import type { LiveSessionRow, RiskLevel } from "@exam/shared";
+
+const meta: Record<RiskLevel, { label: string; icon: React.ReactNode }> = {
+  low: { label: "Low risk", icon: <CircleCheck className="size-5" aria-hidden /> },
+  medium: { label: "Medium risk", icon: <TriangleAlert className="size-5" aria-hidden /> },
+  high: { label: "High risk", icon: <OctagonAlert className="size-5" aria-hidden /> },
+};
+
+const actions = [
+  { href: "/admin/live", label: "Live monitoring", hint: "Watch sessions in real time", Icon: Radar },
+  { href: "/admin/exams/new", label: "Create exam", hint: "Schedule a new assessment", Icon: FilePlus2 },
+  { href: "/admin/reports", label: "Reports", hint: "Review and export evidence", Icon: BarChart3 },
+];
 
 export default function AdminDashboardPage() {
   const [rows, setRows] = useState<LiveSessionRow[]>([]);
@@ -14,12 +28,7 @@ export default function AdminDashboardPage() {
     void fetchLiveBoard().then((result) => setRows(result ?? []));
   }, []);
 
-  const counts: { level: RiskLevel; count: number }[] = (
-    ["low", "medium", "high"] as RiskLevel[]
-  ).map((level) => ({
-    level,
-    count: rows.filter((row) => row.risk === level).length,
-  }));
+  const levels: RiskLevel[] = ["low", "medium", "high"];
 
   return (
     <>
@@ -28,23 +37,40 @@ export default function AdminDashboardPage() {
         description="Server-backed integrity overview. Open Live Monitoring to review evidence."
       />
       <div className="grid gap-4 sm:grid-cols-3">
-        {counts.map((item) => (
-          <div
-            key={item.level}
-            className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4"
-          >
-            <RiskChip level={item.level} />
-            <p className="mt-3 text-3xl font-semibold">{item.count}</p>
-            <p className="text-sm text-[var(--muted)]">Exam sessions</p>
-          </div>
+        {levels.map((level) => (
+          <StatCard
+            key={level}
+            tone={level}
+            icon={meta[level].icon}
+            label={meta[level].label}
+            value={rows.filter((row) => row.risk === level).length}
+            hint="Exam sessions"
+          />
         ))}
       </div>
-      <Link
-        href="/admin/live"
-        className="mt-6 inline-block text-sm text-[var(--accent)] underline"
-      >
-        Open live monitoring
-      </Link>
+      <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">
+        Quick actions
+      </h2>
+      <div className="grid gap-4 sm:grid-cols-3">
+        {actions.map(({ href, label, hint, Icon }) => (
+          <Card key={href} interactive className="p-0">
+            <ButtonLink
+              href={href}
+              variant="ghost"
+              className="!flex h-full min-h-24 w-full !justify-start gap-3 rounded-2xl px-5 py-4 text-left"
+            >
+              <span className="btn-grad grid size-11 shrink-0 place-items-center rounded-xl">
+                <Icon className="size-5" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold">{label}</span>
+                <span className="block text-xs font-normal text-[var(--muted)]">{hint}</span>
+              </span>
+              <ArrowRight className="size-4 text-[var(--muted)]" aria-hidden />
+            </ButtonLink>
+          </Card>
+        ))}
+      </div>
     </>
   );
 }

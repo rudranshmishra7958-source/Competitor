@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ShieldAlert } from "lucide-react";
 import type { SecurityAlert } from "@exam/shared";
 import { EmptyState, PageHeader } from "@/components/PageHeader";
+import { Card } from "@/components/ui/Card";
 import { fetchSecurityAlerts } from "@/lib/api";
 
 export default function SecurityPage() {
@@ -25,20 +27,25 @@ export default function SecurityPage() {
       {loaded && alerts.length === 0 ? (
         <EmptyState>No suspicious login signals.</EmptyState>
       ) : (
-        <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+        <ul className="grid gap-3">
           {alerts.map((alert) => (
-            <li key={alert.id} className="px-4 py-3 text-sm">
-              <div className="flex flex-wrap justify-between gap-2">
-                <span className="font-medium">{alert.event.replaceAll("_", " ")}</span>
-                <time className="text-xs text-[var(--muted)]">
-                  {new Date(alert.createdAt).toLocaleString()}
-                </time>
+            <Card as="li" key={alert.id} className="flex items-start gap-3 text-sm">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--risk-medium-bg)] text-[var(--risk-medium-fg)]">
+                <ShieldAlert className="size-5" aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap justify-between gap-2">
+                  <span className="font-medium capitalize">{alert.event.replaceAll("_", " ")}</span>
+                  <time className="text-xs text-[var(--muted)]">
+                    {new Date(alert.createdAt).toLocaleString()}
+                  </time>
+                </div>
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  Account {alert.identifierHint}
+                  {alert.ipAddress ? ` · ${alert.ipAddress}` : ""}
+                </p>
               </div>
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                Account {alert.identifierHint}
-                {alert.ipAddress ? ` · ${alert.ipAddress}` : ""}
-              </p>
-            </li>
+            </Card>
           ))}
         </ul>
       )}

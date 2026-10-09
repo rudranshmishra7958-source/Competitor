@@ -6,9 +6,11 @@ import type {
   ExamStatus,
   McqQuestion,
   Question,
+  ShortAnswerQuestion,
   WrittenQuestion,
   WrittenSubmission,
 } from "@exam/shared";
+import { MOCK_USERS } from "@/lib/session";
 
 export const STORE_KEY = "exam_platform_v1";
 
@@ -41,6 +43,8 @@ export function examStatus(exam: Exam, now = Date.now()): ExamStatus {
   if (now < end) return "live";
   return "completed";
 }
+
+const ALL_STUDENT_IDS = MOCK_USERS.filter((u) => u.role === "student").map((u) => u.userId);
 
 export function isAssigned(exam: Exam, userId: string): boolean {
   return exam.assignedStudentIds.includes(userId);
@@ -83,7 +87,7 @@ function seed(): ExamStoreData {
     type: "mcq",
     startsAt,
     durationMinutes: 90,
-    assignedStudentIds: ["u-stu-1", "u-stu-2"],
+    assignedStudentIds: ALL_STUDENT_IDS,
     policy: { ...DEFAULT_POLICY },
     questionIds: [q1.id, q2.id],
     createdAt: new Date().toISOString(),
@@ -101,7 +105,7 @@ function seed(): ExamStoreData {
     type: "written",
     startsAt,
     durationMinutes: 90,
-    assignedStudentIds: ["u-stu-1", "u-stu-2"],
+    assignedStudentIds: ALL_STUDENT_IDS,
     policy: { ...DEFAULT_POLICY, cameraOptional: true },
     questionIds: [written.id],
     createdAt: new Date().toISOString(),
@@ -181,7 +185,7 @@ function seed(): ExamStoreData {
     type: "mcq",
     startsAt: demoStart,
     durationMinutes: 30,
-    assignedStudentIds: ["u-stu-1", "u-stu-2"],
+    assignedStudentIds: ALL_STUDENT_IDS,
     policy: demoPolicy,
     questionIds: demoQuestions.map((q) => q.id),
     createdAt: new Date().toISOString(),
@@ -192,7 +196,7 @@ function seed(): ExamStoreData {
     type: "mcq",
     startsAt: demoStart,
     durationMinutes: 30,
-    assignedStudentIds: ["u-stu-1", "u-stu-2"],
+    assignedStudentIds: ALL_STUDENT_IDS,
     policy: { ...demoPolicy, requireEndpointAgent: true },
     questionIds: demoQuestions.map((q) => q.id),
     createdAt: new Date().toISOString(),
@@ -321,7 +325,7 @@ function seed(): ExamStoreData {
     attachmentUrl: null,
     ocrText: null,
   };
-  const assigned = ["u-stu-1", "u-stu-2"];
+  const assigned = ALL_STUDENT_IDS;
   const createdAt = new Date().toISOString();
   const osExam: Exam = {
     id: "ex-demo-os",
@@ -367,9 +371,21 @@ function seed(): ExamStoreData {
     questionIds: [...dsMcq.map((q) => q.id), dsWritten.id],
     createdAt,
   };
+  const extra = extraDemoExams(demoStart, assigned, demoPolicy, createdAt);
   return {
-    exams: [demoExam, agentExam, osExam, networksExam, discreteExam, dsExam, exam, writtenExam],
+    exams: [
+      demoExam,
+      agentExam,
+      osExam,
+      networksExam,
+      discreteExam,
+      dsExam,
+      ...extra.exams,
+      exam,
+      writtenExam,
+    ],
     questions: [
+      ...extra.questions,
       ...demoQuestions,
       ...osQuestions,
       ...netMcq,
@@ -387,6 +403,167 @@ function seed(): ExamStoreData {
   };
 }
 
+function short(
+  id: string,
+  prompt: string,
+  acceptedAnswers: string[],
+  numeric?: { tolerance?: number },
+): ShortAnswerQuestion {
+  return {
+    id,
+    kind: "short",
+    prompt,
+    acceptedAnswers,
+    numeric: Boolean(numeric),
+    tolerance: numeric?.tolerance ?? 0,
+  };
+}
+
+function mcq(id: string, prompt: string, options: string[], correctIndex: number): McqQuestion {
+  const opts = options.map((text, i) => ({ id: `o${i + 1}`, text }));
+  return { id, kind: "mcq", prompt, options: opts, correctOptionId: opts[correctIndex].id };
+}
+
+function trueFalse(id: string, prompt: string, answer: boolean): McqQuestion {
+  return mcq(id, prompt, ["True", "False"], answer ? 0 : 1);
+}
+
+/** Additional mock exam formats: short answer, numeric, true/false, practice, scheduled, closed. */
+function extraDemoExams(
+  demoStart: string,
+  assigned: string[],
+  demoPolicy: ExamSecurityPolicy,
+  createdAt: string,
+): { exams: Exam[]; questions: Question[] } {
+  const dbms: Question[] = [
+    mcq(
+      "q-demo-db-1",
+      "Which normal form removes transitive dependencies?",
+      ["1NF", "2NF", "3NF", "No normal form does"],
+      2,
+    ),
+    mcq(
+      "q-demo-db-2",
+      "Which SQL clause filters groups after aggregation?",
+      ["WHERE", "HAVING", "ORDER BY", "LIMIT"],
+      1,
+    ),
+    short("q-demo-db-3", "Name the SQL keyword that removes duplicate rows from a result.", [
+      "distinct",
+      "select distinct",
+    ]),
+    short("q-demo-db-4", "What does the A in ACID stand for?", ["atomicity"]),
+  ];
+  const aptitude: Question[] = [
+    short("q-demo-apt-1", "A train covers 180 km in 3 hours. What is its speed in km/h?", ["60"], {}),
+    short("q-demo-apt-2", "What is 15% of 240?", ["36"], {}),
+    short(
+      "q-demo-apt-3",
+      "Simple interest on ₹5,000 at 8% per year for 2 years, in rupees?",
+      ["800"],
+      {},
+    ),
+    short("q-demo-apt-4", "Give √2 to two decimal places.", ["1.41"], { tolerance: 0.01 }),
+  ];
+  const ethics: Question[] = [
+    trueFalse("q-demo-tf-1", "Sharing your login with a friend during an exam is allowed.", false),
+    trueFalse("q-demo-tf-2", "A High integrity score is reviewed by a person before any decision.", true),
+    trueFalse("q-demo-tf-3", "This platform records the text you copy to the clipboard.", false),
+    trueFalse("q-demo-tf-4", "Every photo you save for a written answer is kept, not overwritten.", true),
+    trueFalse("q-demo-tf-5", "The endpoint agent can run hidden in the background.", false),
+  ];
+  const python: Question[] = [
+    mcq("q-demo-py-1", "What does len([1, [2, 3], 4]) return?", ["2", "3", "4", "Error"], 1),
+    mcq(
+      "q-demo-py-2",
+      "Which of these is immutable?",
+      ["list", "dict", "set", "tuple"],
+      3,
+    ),
+    short("q-demo-py-3", "What is printed by print(7 // 2)?", ["3"], {}),
+    {
+      id: "q-demo-py-w1",
+      kind: "written",
+      prompt:
+        "On paper, write a function that returns the second-largest number in a list. Photograph it.",
+      attachmentUrl: null,
+      ocrText: null,
+    },
+  ];
+  const practice: Question[] = [
+    mcq("q-demo-pr-1", "Practice: 2 + 2 × 2 = ?", ["8", "6", "4", "2"], 1),
+    short("q-demo-pr-2", "Practice: type the word 'ready' to finish.", ["ready"]),
+  ];
+  const archFinal: Question[] = [
+    mcq(
+      "q-demo-arch-1",
+      "Pipelining mainly improves:",
+      ["Latency of one instruction", "Instruction throughput", "Disk capacity", "Cache size"],
+      1,
+    ),
+  ];
+  const closed: Question[] = [
+    mcq("q-demo-intro-1", "Which keyword defines a function in Python?", ["func", "def", "lambda only", "fn"], 1),
+  ];
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60_000);
+  tomorrow.setMinutes(0, 0, 0);
+  const lastWeek = new Date(Date.now() - 6 * 24 * 60 * 60_000).toISOString();
+  const allowAll: ExamSecurityPolicy = {
+    ...demoPolicy,
+    fullscreen: "allow_but_log",
+    tabSwitch: "allow_but_log",
+    clipboard: "allow_but_log",
+    externalApp: "allow_but_log",
+    externalSearch: "allow_but_log",
+    multiWindow: "allow_but_log",
+  };
+  const make = (
+    id: string,
+    title: string,
+    type: Exam["type"],
+    questions: Question[],
+    extra: Partial<Exam> = {},
+  ): Exam => ({
+    id,
+    title,
+    type,
+    startsAt: demoStart,
+    durationMinutes: 30,
+    assignedStudentIds: assigned,
+    policy: { ...demoPolicy },
+    questionIds: questions.map((q) => q.id),
+    createdAt,
+    ...extra,
+  });
+  return {
+    exams: [
+      make("ex-demo-dbms", "Database systems (MCQ + short answer)", "mcq", dbms, { durationMinutes: 30 }),
+      make("ex-demo-aptitude", "Quantitative aptitude (numeric answers)", "mcq", aptitude, {
+        durationMinutes: 20,
+      }),
+      make("ex-demo-truefalse", "Academic integrity (true / false)", "mcq", ethics, {
+        durationMinutes: 10,
+      }),
+      make("ex-demo-python", "Python programming (MCQ + short + scan)", "mixed", python, {
+        durationMinutes: 45,
+      }),
+      make("ex-demo-practice", "Practice quiz (log only, not scored)", "mcq", practice, {
+        durationMinutes: 15,
+        policy: allowAll,
+      }),
+      make("ex-demo-arch-final", "Computer architecture final (opens tomorrow)", "mcq", archFinal, {
+        startsAt: tomorrow.toISOString(),
+        durationMinutes: 120,
+      }),
+      make("ex-demo-intro-closed", "Intro to programming (closed last week)", "mcq", closed, {
+        startsAt: lastWeek,
+        durationMinutes: 60,
+      }),
+    ],
+    questions: [...dbms, ...aptitude, ...ethics, ...python, ...practice, ...archFinal, ...closed],
+  };
+}
+
 const DEMO_EXAM_IDS = new Set([
   "ex-demo-integrity",
   "ex-demo-integrity-agent",
@@ -394,12 +571,25 @@ const DEMO_EXAM_IDS = new Set([
   "ex-demo-networks",
   "ex-demo-discrete-agent",
   "ex-demo-ds-agent",
+  "ex-demo-dbms",
+  "ex-demo-aptitude",
+  "ex-demo-truefalse",
+  "ex-demo-python",
+  "ex-demo-practice",
 ]);
+
+/** Demo exams that should always look scheduled (not yet open). */
+const SCHEDULED_DEMO_IDS = new Set(["ex-demo-arch-final"]);
 
 function ensureDemoLive(data: ExamStoreData): boolean {
   const now = Date.now();
   let changed = false;
   for (const exam of data.exams) {
+    if (SCHEDULED_DEMO_IDS.has(exam.id) && examStatus(exam, now) !== "scheduled") {
+      exam.startsAt = new Date(now + 24 * 60 * 60_000).toISOString();
+      changed = true;
+      continue;
+    }
     if (!DEMO_EXAM_IDS.has(exam.id)) continue;
     if (examStatus(exam, now) === "live") continue;
     exam.startsAt = new Date(now - 2 * 60_000).toISOString();
@@ -424,7 +614,13 @@ function migrate(data: Partial<ExamStoreData>): ExamStoreData {
   for (const exam of seeded.exams) {
     const existing = next.exams.find((e) => e.id === exam.id);
     if (!existing) next.exams.push(exam);
-    else if (DEMO_EXAM_IDS.has(exam.id)) existing.durationMinutes = exam.durationMinutes;
+    else if (DEMO_EXAM_IDS.has(exam.id) || exam.id.startsWith("ex-seed-")) {
+      existing.durationMinutes = exam.durationMinutes;
+      // New demo accounts should see the demo exams too.
+      existing.assignedStudentIds = [
+        ...new Set([...existing.assignedStudentIds, ...exam.assignedStudentIds]),
+      ];
+    }
   }
   for (const q of seeded.questions) {
     if (!next.questions.some((x) => x.id === q.id)) next.questions.push(q);
@@ -513,6 +709,17 @@ export function saveAnswer(attemptId: string, questionId: string, selectedOption
   saveStore(data);
 }
 
+export function saveTextAnswer(attemptId: string, questionId: string, text: string): void {
+  const data = loadStore();
+  const idx = data.answers.findIndex(
+    (a) => a.attemptId === attemptId && a.questionId === questionId,
+  );
+  const row: Answer = { attemptId, questionId, selectedOptionId: "", text };
+  if (idx >= 0) data.answers[idx] = row;
+  else data.answers.push(row);
+  saveStore(data);
+}
+
 export function answersForAttempt(attemptId: string): Answer[] {
   return loadStore().answers.filter((a) => a.attemptId === attemptId);
 }
@@ -558,20 +765,92 @@ export function studentRoster(): {
   institutionalId: string;
   email: string;
 }[] {
-  return [
-    {
-      userId: "u-stu-1",
-      displayName: "Asha Rao",
-      institutionalId: "STU001",
-      email: "student@college.edu",
-    },
-    {
-      userId: "u-stu-2",
-      displayName: "Kabir Singh",
-      institutionalId: "STU002",
-      email: "kabir@college.edu",
-    },
-  ];
+  return MOCK_USERS.filter((u) => u.role === "student").map((u) => ({
+    userId: u.userId,
+    displayName: u.displayName,
+    institutionalId: u.institutionalId,
+    email: u.email,
+  }));
+}
+
+/** Human label for the mix of question kinds in an exam. */
+export function examFormatLabel(exam: Exam): string {
+  const kinds = new Set(questionsForExam(exam).map((q) => q.kind));
+  const parts: string[] = [];
+  if (kinds.has("mcq")) parts.push("Multiple choice");
+  if (kinds.has("short")) parts.push("Short answer");
+  if (kinds.has("written")) parts.push("Scan answers");
+  return parts.join(" + ") || "No questions yet";
+}
+
+function normalizeAnswer(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+export function isShortAnswerCorrect(question: ShortAnswerQuestion, given: string): boolean {
+  if (!given.trim()) return false;
+  if (question.numeric) {
+    const value = Number(given.replace(/[,₹\s]/g, ""));
+    if (Number.isNaN(value)) return false;
+    return question.acceptedAnswers.some(
+      (a) => Math.abs(Number(a) - value) <= (question.tolerance ?? 0) + 1e-9,
+    );
+  }
+  const norm = normalizeAnswer(given);
+  return question.acceptedAnswers.some((a) => normalizeAnswer(a) === norm);
+}
+
+export type GradedItem = {
+  question: Question;
+  /** null for written answers, which need a person to grade them. */
+  correct: boolean | null;
+  given: string;
+  expected: string;
+};
+
+export type AttemptResult = {
+  items: GradedItem[];
+  correct: number;
+  gradable: number;
+  percent: number;
+  pendingManual: number;
+};
+
+/** Auto-grades MCQ and short answers for an attempt; written scans are left for manual review. */
+export function gradeAttempt(exam: Exam, attemptId: string): AttemptResult {
+  const answers = answersForAttempt(attemptId);
+  const items: GradedItem[] = questionsForExam(exam).map((question) => {
+    const answer = answers.find((a) => a.questionId === question.id);
+    if (question.kind === "mcq") {
+      const chosen = question.options.find((o) => o.id === answer?.selectedOptionId);
+      const right = question.options.find((o) => o.id === question.correctOptionId);
+      return {
+        question,
+        correct: answer ? answer.selectedOptionId === question.correctOptionId : false,
+        given: chosen?.text ?? "",
+        expected: right?.text ?? "",
+      };
+    }
+    if (question.kind === "short") {
+      const given = answer?.text ?? "";
+      return {
+        question,
+        correct: isShortAnswerCorrect(question, given),
+        given,
+        expected: question.acceptedAnswers[0] ?? "",
+      };
+    }
+    return { question, correct: null, given: "", expected: "" };
+  });
+  const gradable = items.filter((i) => i.correct !== null).length;
+  const correct = items.filter((i) => i.correct === true).length;
+  return {
+    items,
+    correct,
+    gradable,
+    percent: gradable ? Math.round((correct / gradable) * 100) : 0,
+    pendingManual: items.length - gradable,
+  };
 }
 
 /** Stable shuffle from examId+studentId so refresh does not reorder. */

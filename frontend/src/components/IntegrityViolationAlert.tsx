@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { OctagonAlert } from "lucide-react";
 import type { ViolationNotice } from "@/lib/student-warnings";
 
 export function IntegrityViolationAlert({
@@ -23,18 +24,23 @@ export function IntegrityViolationAlert({
       : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/55 px-4 pt-24">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/55 px-4 pt-24 backdrop-blur-sm">
       <div
-        role="alert"
-        className="w-full max-w-md rounded-xl border-2 border-red-500 bg-[#3b0d0d] p-5 text-white shadow-2xl"
+        role="alertdialog"
+        aria-label="Integrity warning"
+        className="glass-strong rise w-full max-w-md rounded-2xl !border-[var(--risk-high-fg)] p-5"
       >
-        <p className="text-xs font-semibold uppercase tracking-wide text-red-200">Integrity warning</p>
+        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--risk-high-fg)]">
+          <OctagonAlert className="size-4" aria-hidden />
+          Integrity warning
+        </p>
         <p className="mt-2 text-lg font-medium leading-snug">{notice.message}</p>
-        {scoreLine ? <p className="mt-3 text-sm text-red-100">{scoreLine}</p> : null}
+        {scoreLine ? <p className="mt-3 text-sm text-[var(--muted)]">{scoreLine}</p> : null}
         <button
           type="button"
           onClick={onDismiss}
-          className="mt-4 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white"
+          autoFocus
+          className="mt-4 min-h-10 rounded-xl bg-[var(--risk-high-fg)] px-4 text-sm font-medium text-[var(--surface-solid)]"
         >
           Dismiss
         </button>

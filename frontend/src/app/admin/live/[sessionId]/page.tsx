@@ -10,6 +10,9 @@ import type {
 import { EventTimelineList } from "@/components/EventTimelineList";
 import { PageHeader } from "@/components/PageHeader";
 import { RiskChip } from "@/components/RiskChip";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { fetchTimeline, updateReview } from "@/lib/api";
 
 export default function SessionTimelinePage() {
@@ -46,7 +49,7 @@ export default function SessionTimelinePage() {
     return (
       <>
         <PageHeader title="Session timeline" />
-        <p className="text-sm text-[var(--muted)]">Loading server session…</p>
+        <Skeleton className="h-32" />
       </>
     );
   }
@@ -66,11 +69,18 @@ export default function SessionTimelinePage() {
         <Summary label="Correlated">{session.breakdown.correlated}</Summary>
       </div>
 
-      <section className="mt-6 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
+      <Card as="section" className="mt-6">
         <h2 className="font-semibold">Reviewer decision</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {(["unreviewed", "flagged", "cleared"] as ReviewerStatus[]).map((value) => (
-            <label key={value} className="flex items-center gap-1 text-sm capitalize">
+            <label
+              key={value}
+              className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm capitalize ${
+                status === value
+                  ? "border-[var(--accent)] bg-[var(--nav-active-bg)] font-medium"
+                  : "border-[var(--border)]"
+              }`}
+            >
               <input
                 type="radio"
                 name="review-status"
@@ -88,18 +98,14 @@ export default function SessionTimelinePage() {
             onChange={(event) => setNote(event.target.value)}
             rows={3}
             maxLength={1000}
-            className="mt-1 w-full rounded-md border border-[var(--border)] bg-white px-3 py-2"
+            className="mt-1.5 w-full rounded-xl border border-[var(--border)] px-3 py-2"
           />
         </label>
-        <button
-          type="button"
-          onClick={saveReview}
-          className="mt-3 rounded-md bg-[var(--accent)] px-3 py-2 text-sm text-white"
-        >
+        <Button onClick={saveReview} className="mt-3">
           Save review
-        </button>
+        </Button>
         {message ? <p className="mt-2 text-sm text-[var(--muted)]">{message}</p> : null}
-      </section>
+      </Card>
 
       <section className="mt-8">
         <h2 className="text-lg font-semibold">All activity (browser + agent)</h2>
@@ -128,9 +134,9 @@ function Summary({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
+    <Card>
       <p className="text-xs text-[var(--muted)]">{label}</p>
-      <div className="mt-2 text-xl font-semibold">{children}</div>
-    </div>
+      <div className="mt-2 text-xl font-semibold tabular-nums">{children}</div>
+    </Card>
   );
 }

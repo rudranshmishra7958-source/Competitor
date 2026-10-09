@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { LockKeyhole } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SessionPayload } from "@exam/shared";
@@ -38,12 +40,12 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-md items-center px-6 py-16">
-      <form
-        onSubmit={submit}
-        className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-8"
-      >
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--accent)]">
+    <div className="mx-auto flex min-h-screen max-w-md items-center px-4 py-12">
+      <form onSubmit={submit} className="glass-strong rise w-full rounded-3xl p-6 sm:p-8">
+        <span className="btn-grad grid size-12 place-items-center rounded-2xl" aria-hidden>
+          <LockKeyhole className="size-6" />
+        </span>
+        <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-[var(--nav-active-fg)]">
           Account security
         </p>
         <h1 className="mt-2 text-2xl font-semibold">
@@ -63,15 +65,16 @@ export default function ChangePasswordPage() {
           value={confirmPassword}
           onChange={setConfirmPassword}
         />
-        <button
-          type="submit"
-          className="mt-5 w-full rounded-md bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white"
-        >
+        <Button type="submit" size="lg" className="mt-6 w-full">
           Save password
-        </button>
-        {message ? <p className="mt-3 text-sm text-[var(--muted)]">{message}</p> : null}
+        </Button>
+        {message ? (
+          <p className="mt-3 rounded-xl bg-[var(--nav-active-bg)] px-3 py-2 text-sm" role="status">
+            {message}
+          </p>
+        ) : null}
         {!required ? (
-          <Link href="/" className="mt-4 inline-block text-sm text-[var(--accent)] underline">
+          <Link href="/" className="mt-4 inline-block text-sm text-[var(--nav-active-fg)] underline-offset-2 hover:underline">
             Cancel
           </Link>
         ) : null}
@@ -99,7 +102,7 @@ function PasswordField({
         autoComplete={label === "Current password" ? "current-password" : "new-password"}
         minLength={12}
         required
-        className="mt-1 w-full rounded-md border border-[var(--border)] bg-white px-3 py-2"
+        className="mt-1.5 min-h-11 w-full rounded-xl border border-[var(--border)] px-3.5 py-2.5"
       />
     </label>
   );

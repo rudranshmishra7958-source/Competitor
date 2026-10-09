@@ -1,7 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Camera, ImagePlus, ScanLine, TriangleAlert, Video } from "lucide-react";
 import type { WrittenQuestion, WrittenSubmission } from "@exam/shared";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { addWrittenSubmission, submissionsForStudent } from "@/lib/exam-store";
 import { assessImageDataUrl, canvasToJpeg, fileToDataUrl } from "@/lib/image-quality";
 import { sendMonitorEvent } from "@/lib/api";
@@ -152,12 +155,16 @@ export function WrittenCapture({
     setWarnings([]);
   }
 
+  const pickCls =
+    "glass inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl px-4 text-sm font-medium hover:border-[var(--accent)] focus-within:ring-2 focus-within:ring-[var(--ring)]";
+
   return (
-    <article className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
-      <p className="font-medium">{question.prompt}</p>
+    <Card as="article" className="sm:p-6">
+      <p className="text-lg font-medium leading-snug">{question.prompt}</p>
       {!disabled ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          <label className="cursor-pointer rounded-md border border-[var(--border)] px-3 py-1.5 text-sm">
+        <div className="mt-4 flex flex-wrap gap-2">
+          <label className={pickCls}>
+            <ImagePlus className="size-4" aria-hidden />
             Upload scan
             <input
               type="file"
@@ -167,7 +174,8 @@ export function WrittenCapture({
               onChange={(e) => onFile(e.target.files?.[0])}
             />
           </label>
-          <label className="cursor-pointer rounded-md border border-[var(--border)] px-3 py-1.5 text-sm">
+          <label className={pickCls}>
+            <Camera className="size-4" aria-hidden />
             Take photo
             <input
               type="file"
@@ -178,102 +186,110 @@ export function WrittenCapture({
               onChange={(e) => onFile(e.target.files?.[0])}
             />
           </label>
-          <button
-            type="button"
-            className="rounded-md border border-[var(--border)] px-3 py-1.5 text-sm"
-            disabled={busy}
-            onClick={() => void startCamera()}
-          >
+          <Button variant="secondary" disabled={busy} onClick={() => void startCamera()}>
+            <Video className="size-4" aria-hidden />
             Open camera
-          </button>
+          </Button>
         </div>
       ) : (
-        <p className="mt-2 text-sm text-[var(--muted)]">This exam window is closed. History below is still visible.</p>
+        <p className="mt-2 text-sm text-[var(--muted)]">
+          This exam window is closed. History below is still visible.
+        </p>
       )}
       {cameraOn ? (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 space-y-3">
           <p className="text-xs text-[var(--muted)]">
             This camera is only for photographing your written answer — not live proctoring.
           </p>
-          <video ref={attachVideo} autoPlay playsInline muted className="max-h-64 w-full rounded-md bg-black" />
+          <video
+            ref={attachVideo}
+            autoPlay
+            playsInline
+            muted
+            className="max-h-72 w-full rounded-2xl bg-black"
+          />
           <div className="flex gap-2">
-            <button
-              type="button"
-              className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-sm text-white"
-              onClick={snapPhoto}
-            >
+            <Button onClick={snapPhoto}>
+              <Camera className="size-4" aria-hidden />
               Capture
-            </button>
-            <button type="button" className="rounded-md border border-[var(--border)] px-3 py-1.5 text-sm" onClick={stopCamera}>
+            </Button>
+            <Button variant="secondary" onClick={stopCamera}>
               Close camera
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
       {error ? (
-        <p className="mt-2 text-sm text-[var(--risk-high-fg)]" role="alert">
+        <p
+          className="mt-3 flex items-start gap-2 rounded-xl bg-[var(--risk-high-bg)] px-3 py-2 text-sm text-[var(--risk-high-fg)]"
+          role="alert"
+        >
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
           {error}
         </p>
       ) : null}
       {preview ? (
-        <div className="mt-4 space-y-2">
-          <img src={preview} alt="Preview of written answer" className="max-h-64 rounded-md border border-[var(--border)]" />
+        <div className="mt-4 space-y-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={preview}
+            alt="Preview of written answer"
+            className="max-h-72 rounded-2xl border border-[var(--border)]"
+          />
           {warnings.length ? (
-            <ul className="text-sm text-[var(--risk-medium-fg)]">
+            <ul className="space-y-1 rounded-xl bg-[var(--risk-medium-bg)] px-3 py-2 text-sm text-[var(--risk-medium-fg)]">
               {warnings.map((w) => (
-                <li key={w}>{w}</li>
+                <li key={w} className="flex items-start gap-2">
+                  <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+                  {w}
+                </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-[var(--muted)]">Looks readable.</p>
+            <p className="text-sm text-[var(--risk-low-fg)]">Looks readable.</p>
           )}
           <div className="flex gap-2">
-            <button
-              type="button"
-              className="rounded-md bg-[var(--accent)] px-3 py-1.5 text-sm text-white"
-              onClick={submitPreview}
-            >
-              {warnings.length ? "Save anyway" : "Save this scan"}
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-[var(--border)] px-3 py-1.5 text-sm"
+            <Button onClick={submitPreview}>{warnings.length ? "Save anyway" : "Save this scan"}</Button>
+            <Button
+              variant="secondary"
               onClick={() => {
                 setPreview(null);
                 setWarnings([]);
               }}
             >
               Retake
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
       <HistoryList items={history} />
-    </article>
+    </Card>
   );
 }
 
 function HistoryList({ items }: { items: WrittenSubmission[] }) {
   if (items.length === 0) {
     return (
-      <p className="mt-4 text-sm text-[var(--muted)]">
+      <p className="mt-4 flex items-center gap-2 text-sm text-[var(--muted)]">
+        <ScanLine className="size-4" aria-hidden />
         No scans yet. Each save is kept; nothing is overwritten.
       </p>
     );
   }
   return (
-    <div className="mt-4">
+    <div className="mt-5">
       <h3 className="text-sm font-medium">Your scans (audit history)</h3>
-      <ul className="mt-2 space-y-3">
+      <ul className="mt-2 flex gap-3 overflow-x-auto pb-2">
         {[...items].reverse().map((item, index) => (
-          <li key={item.id} className="text-sm">
+          <li key={item.id} className="w-40 shrink-0 text-xs">
             <p className="text-[var(--muted)]">
               {index === 0 ? "Latest" : "Earlier"} · {new Date(item.createdAt).toLocaleString()}
             </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={item.imageUrl}
               alt={`Submitted scan from ${item.createdAt}`}
-              className="mt-1 max-h-40 rounded-md border border-[var(--border)]"
+              className="mt-1 h-28 w-full rounded-xl border border-[var(--border)] object-cover"
             />
           </li>
         ))}

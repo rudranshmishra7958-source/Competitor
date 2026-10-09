@@ -251,3 +251,34 @@ def test_progressive_lockout_and_security_alerts(client):
     alerts = client.get("/admin/security/alerts", headers=auth(admin))
     assert alerts.status_code == 200
     assert len(alerts.json()) >= 5
+
+
+def test_new_demo_accounts_can_log_in(client):
+    assert login(client, "STU005")
+    assert login(client, "proctor@college.edu", role="admin")
+
+
+def test_simulated_session_scores_and_clears(client):
+    token = login(client, "FAC001", role="admin")
+    headers = {"Authorization": f"Bearer {token}"}
+    clean = client.post("/admin/demo/simulate", json={"scenario": "clean"}, headers=headers)
+    assert clean.status_code == 201
+    assert clean.json()["risk"] == "low"
+    risky = client.post("/admin/demo/simulate", json={"scenario": "app_switcher"}, headers=headers)
+    assert risky.status_code == 201
+    assert risky.json()["risk"] in {"medium", "high"}
+    assert risky.json()["studentId"] != clean.json()["studentId"]
+    assert risky.json()["studentId"] not in {"u-stu-1", "u-stu-2"}
+    live = client.get("/admin/live", headers=headers).json()
+    assert len([row for row in live if row["sessionId"].startswith("sim-")]) == 2
+    assert client.delete("/admin/demo/simulate", headers=headers).status_code == 204
+    live = client.get("/admin/live", headers=headers).json()
+    assert not [row for row in live if row["sessionId"].startswith("sim-")]
+
+
+def test_students_cannot_simulate(client):
+    token = login(client)
+    response = client.post(
+        "/admin/demo/simulate", json={"scenario": "clean"}, headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code in {401, 403}

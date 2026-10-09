@@ -20,16 +20,33 @@ export function PolicySelect({
   onChange: (v: PolicyMode) => void;
   disabled?: boolean;
 }) {
+  const options: { v: PolicyMode; label: string }[] = [
+    { v: "enforce", label: "Enforce" },
+    { v: "allow_but_log", label: "Allow but log" },
+  ];
   return (
-    <select
-      className="rounded-md border border-[var(--border)] bg-white px-2 py-1 text-sm"
-      value={value}
-      disabled={disabled}
-      onChange={(e) => onChange(e.target.value as PolicyMode)}
+    <div
+      role="radiogroup"
+      className="inline-flex rounded-xl border border-[var(--border)] p-0.5 text-sm"
     >
-      <option value="enforce">Enforce</option>
-      <option value="allow_but_log">Allow but log</option>
-    </select>
+      {options.map((o) => (
+        <button
+          key={o.v}
+          type="button"
+          role="radio"
+          aria-checked={value === o.v}
+          disabled={disabled}
+          onClick={() => onChange(o.v)}
+          className={`min-h-9 rounded-[10px] px-3 font-medium disabled:cursor-not-allowed ${
+            value === o.v
+              ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)] shadow-[inset_0_0_0_1px_var(--accent)]"
+              : "text-[var(--muted)] hover:text-[var(--foreground)]"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
