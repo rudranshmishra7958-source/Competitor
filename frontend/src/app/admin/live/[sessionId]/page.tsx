@@ -87,7 +87,7 @@ export default function SessionTimelinePage() {
           {(["unreviewed", "flagged", "cleared"] as ReviewerStatus[]).map((value) => (
             <label
               key={value}
-              className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm capitalize ${
+              className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm ${
                 status === value
                   ? "border-[var(--accent)] bg-[var(--nav-active-bg)] font-medium"
                   : "border-[var(--border)]"

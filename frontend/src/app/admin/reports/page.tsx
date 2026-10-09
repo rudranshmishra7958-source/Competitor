@@ -2,7 +2,7 @@
 
 import { ArrowRight, CircleCheck, OctagonAlert, TriangleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { IntegrityReportSummary, RiskLevel } from "@exam/shared";
+import type { IntegrityReportSummary } from "@exam/shared";
 import { EmptyState, PageHeader } from "@/components/PageHeader";
 import { RiskChip } from "@/components/RiskChip";
 import { PriorityBadge } from "@/components/proctor/ReviewEvidence";
@@ -12,12 +12,6 @@ import { Card, StatCard } from "@/components/ui/Card";
 import { fetchReports } from "@/lib/api";
 import { assuranceLabel, reviewLabel } from "@/lib/assurance-labels";
 import { getExam } from "@/lib/exam-store";
-
-const RISK_BORDER: Record<RiskLevel, string> = {
-  low: "!border-l-[var(--risk-low-fg)]",
-  medium: "!border-l-[var(--risk-medium-fg)]",
-  high: "!border-l-[var(--risk-high-fg)]",
-};
 
 export default function ReportsPage() {
   const [reports, setReports] = useState<IntegrityReportSummary[]>([]);
@@ -66,7 +60,7 @@ export default function ReportsPage() {
                   as="li"
                   key={report.sessionId}
                   interactive
-                  className={`border-l-4 ${RISK_BORDER[report.risk]}`}
+                  
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>

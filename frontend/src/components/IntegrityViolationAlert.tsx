@@ -30,7 +30,7 @@ export function IntegrityViolationAlert({
       <div
         role="alertdialog"
         aria-label={camera ? "You are being monitored" : "Integrity warning"}
-        className="glass-strong rise w-full max-w-md rounded-2xl !border-[var(--risk-high-fg)] p-5"
+        className="surface-float rise w-full max-w-md rounded-2xl !border-[var(--risk-high-fg)] p-5"
       >
         <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--risk-high-fg)]">
           {camera ? <Video className="size-4" aria-hidden /> : <OctagonAlert className="size-4" aria-hidden />}

@@ -183,7 +183,7 @@ export default function TakeExamPage() {
         />
       ) : null}
 
-      <div className="glass-strong z-20 sm:sticky sm:top-20 rounded-2xl p-4">
+      <div className="surface-float z-20 sm:sticky sm:top-20 rounded-2xl p-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="min-w-0">
             <Badge tone="low" icon={<Radio className="size-3.5" aria-hidden />}>
@@ -228,7 +228,7 @@ export default function TakeExamPage() {
             aria-label="Answered questions"
           >
             <div
-              className="h-full rounded-full bg-[image:var(--accent-grad)] transition-all"
+              className="h-full rounded-full bg-primary transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -240,7 +240,7 @@ export default function TakeExamPage() {
                 aria-label={`Question ${i + 1}${selected[q.id]?.trim() ? ", answered" : ", unanswered"}`}
                 className={`grid size-8 place-items-center rounded-lg text-xs font-medium ${
                   selected[q.id]?.trim()
-                    ? "btn-grad"
+                    ? "bg-primary text-primary-foreground"
                     : "border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)]"
                 }`}
               >

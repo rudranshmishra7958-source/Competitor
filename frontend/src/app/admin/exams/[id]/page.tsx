@@ -23,7 +23,7 @@ export default function InspectExamPage() {
   }, [params.id]);
 
   if (!exam) {
-    return <p className="glass rounded-2xl p-6 text-sm text-[var(--muted)]">Exam not found in this browser store.</p>;
+    return <p className="surface rounded-2xl p-6 text-sm text-[var(--muted)]">Exam not found in this browser store.</p>;
   }
 
   return (

@@ -6,19 +6,13 @@ import { useSyncExternalStore } from "react";
 type Theme = "light" | "dark";
 
 function subscribe(onChange: () => void) {
-  const mq = window.matchMedia("(prefers-color-scheme: dark)");
   window.addEventListener("theme-change", onChange);
-  mq.addEventListener("change", onChange);
-  return () => {
-    window.removeEventListener("theme-change", onChange);
-    mq.removeEventListener("change", onChange);
-  };
+  return () => window.removeEventListener("theme-change", onChange);
 }
 
+/** Light is the default; dark only when the user chose it. */
 function current(): Theme {
-  const attr = document.documentElement.getAttribute("data-theme");
-  if (attr === "light" || attr === "dark") return attr;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
 }
 
 export function ThemeToggle() {
@@ -42,9 +36,9 @@ export function ThemeToggle() {
       onClick={toggle}
       suppressHydrationWarning
       aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
-      className="glass grid size-10 place-items-center rounded-xl hover:border-[var(--accent)]"
+      className="grid size-9 place-items-center rounded-full border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
     >
-      {dark ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+      {dark ? <Sun className="size-4" aria-hidden /> : <Moon className="size-4" aria-hidden />}
     </button>
   );
 }

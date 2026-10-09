@@ -1,4 +1,4 @@
-import { cx } from "./cx";
+import { cn } from "@/lib/utils";
 
 export function Card({
   className,
@@ -14,22 +14,23 @@ export function Card({
   return (
     <Tag
       {...rest}
-      className={cx(
-        "rounded-2xl p-5",
-        strong ? "glass-strong" : "glass",
-        interactive && "lift",
+      className={cn(
+        "rounded-2xl border border-border bg-card p-5 text-card-foreground",
+        strong && "shadow-[var(--shadow-float)]",
+        interactive && "transition-colors hover:border-[var(--border-strong)]",
         className,
       )}
     />
   );
 }
 
-const toneClass = {
-  low: "bg-[var(--risk-low-bg)] text-[var(--risk-low-fg)]",
-  medium: "bg-[var(--risk-medium-bg)] text-[var(--risk-medium-fg)]",
-  high: "bg-[var(--risk-high-bg)] text-[var(--risk-high-fg)]",
+const toneDot = {
+  low: "bg-[var(--risk-low-fg)]",
+  medium: "bg-[var(--risk-medium-fg)]",
+  high: "bg-[var(--risk-high-fg)]",
 };
 
+/** Label + large number. The optional icon is shown small beside the label, never as a tile. */
 export function StatCard({
   label,
   value,
@@ -43,19 +44,15 @@ export function StatCard({
   icon?: React.ReactNode;
   tone?: "low" | "medium" | "high";
 }) {
-  const cls = tone ? toneClass[tone] : "bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]";
   return (
-    <Card className="flex items-start gap-4">
-      {icon ? (
-        <span className={cx("grid size-11 shrink-0 place-items-center rounded-xl", cls)}>
-          {icon}
-        </span>
-      ) : null}
-      <div className="min-w-0">
-        <p className="text-sm text-[var(--muted)]">{label}</p>
-        <p className="mt-0.5 text-2xl font-semibold tabular-nums">{value}</p>
-        {hint ? <p className="mt-1 text-xs text-[var(--muted)]">{hint}</p> : null}
-      </div>
+    <Card className="flex flex-col gap-3">
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        {tone ? <span className={cn("size-1.5 rounded-full", toneDot[tone])} aria-hidden /> : null}
+        {!tone && icon ? <span className="text-muted-foreground [&_svg]:size-4">{icon}</span> : null}
+        {label}
+      </p>
+      <p className="text-4xl font-medium tracking-tight tabular-nums">{value}</p>
+      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </Card>
   );
 }

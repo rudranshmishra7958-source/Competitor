@@ -30,6 +30,7 @@ import { PriorityBadge, SnapshotImage } from "@/components/proctor/ReviewEvidenc
 import { eventLabelForAdmin } from "@/lib/event-labels";
 import { getExam } from "@/lib/exam-store";
 import type { LiveSessionRow, RiskLevel } from "@exam/shared";
+import { sentence } from "@/lib/utils";
 
 const DISCLAIMER =
   "Browser signals are best-effort. The score is evidence for a person, not an automatic fail.";
@@ -185,7 +186,7 @@ export default function LiveMonitoringPage() {
         title="Live monitoring"
         description="Sessions are sorted by review priority. Open one to see its evidence and mark Flagged or Cleared."
         actions={
-          <div className="glass inline-flex rounded-xl p-0.5" role="group" aria-label="View">
+          <div className="surface inline-flex rounded-xl p-0.5" role="group" aria-label="View">
             <button
               type="button"
               aria-pressed={view === "grid"}
@@ -216,7 +217,7 @@ export default function LiveMonitoringPage() {
         {alerts.map((alert) => (
           <div
             key={alert.sessionId}
-            className="glass-strong rise flex items-start gap-3 rounded-2xl !border-[var(--risk-high-fg)] p-3 text-sm"
+            className="surface-float rise flex items-start gap-3 rounded-2xl !border-[var(--risk-high-fg)] p-3 text-sm"
           >
             <OctagonAlert className="mt-0.5 size-5 shrink-0 text-[var(--risk-high-fg)]" aria-hidden />
             <div className="min-w-0 flex-1">
@@ -321,7 +322,7 @@ export default function LiveMonitoringPage() {
       </div>
 
       {!visibleRows.length ? (
-        <p className="glass rounded-2xl px-4 py-10 text-center text-sm text-[var(--muted)]">
+        <p className="surface rounded-2xl px-4 py-10 text-center text-sm text-[var(--muted)]">
           {rows.length
             ? "No sessions match these filters."
             : "No live sessions yet. A student must start an exam while the API is running, or use Simulate student."}
@@ -333,13 +334,7 @@ export default function LiveMonitoringPage() {
               as="li"
               key={row.sessionId}
               interactive
-              className={`flex flex-col gap-3 border-l-4 ${
-                row.risk === "high"
-                  ? "!border-l-[var(--risk-high-fg)]"
-                  : row.risk === "medium"
-                    ? "!border-l-[var(--risk-medium-fg)]"
-                    : "!border-l-[var(--risk-low-fg)]"
-              }`}
+              className="flex flex-col gap-3"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -395,8 +390,8 @@ export default function LiveMonitoringPage() {
                     {row.endpointConnected ? "Agent" : "No agent"}
                   </Badge>
                   {row.review.status !== "unreviewed" ? (
-                    <Badge tone="accent" className="capitalize">
-                      {row.review.status}
+                    <Badge tone="accent">
+                      {sentence(row.review.status)}
                     </Badge>
                   ) : null}
                 </div>

@@ -33,11 +33,7 @@ export function EventTimelineList({
         return (
           <li
             key={event.id}
-            className={`glass rounded-2xl border-l-4 px-4 py-3 ${
-              variant === "unsafe" || event.scored
-                ? "!border-l-[var(--risk-high-fg)]"
-                : "!border-l-[var(--accent)]"
-            }`}
+            className={`surface rounded-2xl px-4 py-3 ${variant === "unsafe" || event.scored ? "!border-[var(--risk-high-fg)]/40" : ""}`}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-medium">{eventLabelForAdmin(labelType, event.metadata)}</span>

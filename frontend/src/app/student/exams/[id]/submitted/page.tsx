@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, CircleCheck, CircleCheckBig, CircleX, Hourglass, ScanLine, VideoOff } from "lucide-react";
+import { ArrowRight, CircleCheck, CircleX, Hourglass, ScanLine, VideoOff } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
@@ -81,13 +81,7 @@ export default function SubmittedPage() {
         description="Answers are locked. Written scans stay as an append-only history."
       />
       <Card strong className="flex max-w-2xl flex-wrap items-center gap-5">
-        {result && result.gradable > 0 ? (
-          <ScoreRing percent={result.percent} />
-        ) : (
-          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[var(--risk-low-bg)] text-[var(--risk-low-fg)]">
-            <CircleCheckBig className="size-6" aria-hidden />
-          </span>
-        )}
+        {result && result.gradable > 0 ? <ScoreRing percent={result.percent} /> : null}
         <div className="min-w-0 flex-1 text-sm">
           <p className="text-lg font-semibold">{title}</p>
           {result && result.gradable > 0 ? (

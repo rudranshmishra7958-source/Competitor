@@ -156,7 +156,7 @@ export function WrittenCapture({
   }
 
   const pickCls =
-    "glass inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl px-4 text-sm font-medium hover:border-[var(--accent)] focus-within:ring-2 focus-within:ring-[var(--ring)]";
+    "surface inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl px-4 text-sm font-medium hover:border-[var(--accent)] focus-within:ring-2 focus-within:ring-[var(--ring)]";
 
   return (
     <Card as="article" className="sm:p-6">

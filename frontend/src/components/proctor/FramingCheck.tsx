@@ -112,7 +112,7 @@ export function FramingCheck({ onReady }: { onReady: (reference: Blob | null) =>
         </p>
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--border)]" aria-hidden>
           <div
-            className="h-full rounded-full bg-[image:var(--accent-grad)] transition-all"
+            className="h-full rounded-full bg-primary transition-all"
             style={{ width: `${Math.round((state === "ready" ? 1 : progress) * 100)}%` }}
           />
         </div>

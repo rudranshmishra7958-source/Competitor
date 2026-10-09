@@ -154,7 +154,7 @@ export default function IntegrityReportPage() {
             {report.correlations.map((hit) => (
               <li
                 key={`${hit.rule}-${hit.label}-${hit.eventIds.join("-")}`}
-                className="glass rounded-2xl border-l-4 !border-l-[var(--risk-high-fg)] px-4 py-3"
+                className="surface rounded-2xl px-4 py-3"
               >
                 <p className="font-medium">{hit.label}</p>
                 <p className="mt-1 text-xs text-[var(--muted)]">

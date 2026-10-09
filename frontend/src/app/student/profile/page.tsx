@@ -25,15 +25,10 @@ export default function ProfilePage() {
       <PageHeader title="Profile" description="Institution-issued identity on this account." />
       <Card as="section" className="max-w-md">
         <dl className="space-y-4 text-sm">
-          {rows.map(({ label, value, Icon }) => (
-            <div key={label} className="flex items-center gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]">
-                <Icon className="size-5" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <dt className="text-[var(--muted)]">{label}</dt>
-                <dd className="truncate font-medium">{value ?? "—"}</dd>
-              </div>
+          {rows.map(({ label, value }) => (
+            <div key={label} className="flex items-baseline justify-between gap-6 border-b border-border pb-3 last:border-0 last:pb-0">
+              <dt className="text-muted-foreground">{label}</dt>
+              <dd className="truncate font-medium">{value ?? "—"}</dd>
             </div>
           ))}
         </dl>

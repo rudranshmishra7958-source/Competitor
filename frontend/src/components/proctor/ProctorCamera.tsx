@@ -201,7 +201,7 @@ export function ProctorCamera({
   return (
     <aside
       aria-label="Your camera"
-      className={`glass-strong fixed right-3 top-20 z-30 overflow-hidden rounded-2xl transition-all ${
+      className={`surface-float fixed right-3 top-20 z-30 overflow-hidden rounded-2xl transition-all ${
         minimized ? "w-28" : "w-44 sm:w-56"
       }`}
     >

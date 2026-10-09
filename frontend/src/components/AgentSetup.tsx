@@ -39,7 +39,7 @@ export function AgentSetup({
   }
 
   return (
-    <div className="glass rounded-2xl p-4 text-sm">
+    <div className="surface rounded-2xl p-4 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <PlugZap className="size-5 text-[var(--nav-active-fg)]" aria-hidden />

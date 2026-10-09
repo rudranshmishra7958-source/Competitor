@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarCheck, ChartColumn, ScanLine } from "lucide-react";
+import { ChartColumn, ScanLine } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState, PageHeader } from "@/components/PageHeader";
 import { ButtonLink } from "@/components/ui/Button";
@@ -49,9 +49,6 @@ export default function PastExamsPage() {
             return (
               <Card as="li" key={exam.id} className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span className="grid size-10 place-items-center rounded-xl bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]">
-                    <CalendarCheck className="size-5" aria-hidden />
-                  </span>
                   <div>
                     <p className="font-medium">{exam.title}</p>
                     <p className="text-sm text-[var(--muted)]">

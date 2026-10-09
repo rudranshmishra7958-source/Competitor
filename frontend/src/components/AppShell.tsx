@@ -7,11 +7,8 @@ import {
   BarChart3,
   CalendarClock,
   FileText,
-  GraduationCap,
   History,
-  KeyRound,
   LayoutDashboard,
-  LogOut,
   Menu,
   Radar,
   ShieldCheck,
@@ -21,9 +18,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Role, SessionPayload } from "@exam/shared";
+import { Wordmark } from "@/components/brand/VigilMark";
 import { SkipLink } from "@/components/SkipLink";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { cx } from "@/components/ui/cx";
+import { cn } from "@/lib/utils";
 import { clearSession, readClientSession } from "@/lib/session";
 import { logoutRemote } from "@/lib/api";
 
@@ -41,6 +39,16 @@ const ICONS: Record<string, LucideIcon> = {
   "/student/profile": User,
 };
 
+function initials(name: string | undefined): string {
+  if (!name) return "·";
+  return name
+    .split(/\s+/)
+    .filter((part) => /[A-Za-z]/.test(part[0] ?? ""))
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join("");
+}
+
 export function AppShell({
   role,
   nav,
@@ -54,6 +62,7 @@ export function AppShell({
   const router = useRouter();
   const [session, setSession] = useState<SessionPayload | null>(null);
   const [drawerPath, setDrawerPath] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const drawer = drawerPath === pathname;
   const setDrawer = (open: boolean) => setDrawerPath(open ? pathname : null);
 
@@ -72,7 +81,7 @@ export function AppShell({
     href === "/admin" ? pathname === "/admin" : pathname === href || pathname.startsWith(`${href}/`);
 
   const navList = (
-    <ul className="space-y-1">
+    <ul className="space-y-0.5">
       {nav.map((item) => {
         const active = isActive(item.href);
         const Icon = ICONS[item.href] ?? FileText;
@@ -81,15 +90,16 @@ export function AppShell({
             <Link
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={cx(
-                "flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium",
+              className={cn(
+                "flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm",
                 active
-                  ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)] shadow-[inset_3px_0_0_var(--accent)]"
-                  : "text-[var(--foreground)] hover:bg-[var(--nav-active-bg)]",
+                  ? "bg-card font-medium text-foreground shadow-[inset_0_0_0_1px_var(--border)]"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <Icon className="size-[18px] shrink-0" aria-hidden />
-              {item.label}
+              <Icon className="size-4 shrink-0" aria-hidden />
+              <span className="flex-1">{item.label}</span>
+              {active ? <span className="size-1.5 rounded-full bg-[var(--sage)]" aria-hidden /> : null}
             </Link>
           </li>
         );
@@ -100,10 +110,10 @@ export function AppShell({
   return (
     <div className="min-h-full">
       <SkipLink />
-      <header className="glass-strong sticky top-0 z-30 rounded-none border-x-0 border-t-0">
+      <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur-sm">
         <div
-          className={cx(
-            "mx-auto flex items-center justify-between gap-3 px-4 py-3 sm:px-6",
+          className={cn(
+            "mx-auto flex h-16 items-center justify-between gap-3 px-4 sm:px-6",
             focusMode ? "max-w-4xl" : "max-w-7xl",
           )}
         >
@@ -111,71 +121,89 @@ export function AppShell({
             {!focusMode ? (
               <button
                 type="button"
-                className="glass grid size-10 place-items-center rounded-xl lg:hidden"
+                className="grid size-9 place-items-center rounded-full border border-border lg:hidden"
                 aria-label="Open navigation"
                 aria-expanded={drawer}
                 onClick={() => setDrawer(true)}
               >
-                <Menu className="size-5" aria-hidden />
+                <Menu className="size-4" aria-hidden />
               </button>
             ) : null}
-            <span
-              className="btn-grad grid size-9 place-items-center rounded-xl"
-              aria-hidden
-            >
-              <GraduationCap className="size-5" />
+            <Link href={role === "admin" ? "/admin" : "/student/upcoming"} aria-label="Vigil home">
+              <Wordmark />
+            </Link>
+            <span className="hidden rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground sm:inline">
+              {role === "admin" ? "Faculty" : "Student"}
             </span>
-            <div className="leading-tight">
-              <p className="text-sm font-semibold tracking-tight sm:text-base">
-                Secure Examination Platform
-              </p>
-              <p className="text-xs text-[var(--muted)]">
-                {role === "admin" ? "Proctor portal" : "Student portal"}
-              </p>
-            </div>
           </div>
           <div className="flex items-center gap-2">
-            <p className="hidden max-w-40 truncate text-sm text-[var(--muted)] md:block">
-              {session?.displayName ?? "…"}
-            </p>
             <ThemeToggle />
-            <Link
-              href="/change-password"
-              aria-label="Change password"
-              title="Change password"
-              className="glass grid size-10 place-items-center rounded-xl hover:border-[var(--accent)]"
-            >
-              <KeyRound className="size-5" aria-hidden />
-            </Link>
-            <button
-              type="button"
-              onClick={logout}
-              className="glass inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium hover:border-[var(--accent)]"
-            >
-              <LogOut className="size-4" aria-hidden />
-              <span className="hidden sm:inline">Log out</span>
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((open) => !open)}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                className="flex items-center gap-2 rounded-full border border-border py-1 pl-1 pr-3 text-sm hover:bg-muted"
+              >
+                <span className="grid size-7 place-items-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground">
+                  {initials(session?.displayName)}
+                </span>
+                <span className="hidden max-w-36 truncate md:inline">{session?.displayName ?? "…"}</span>
+              </button>
+              {menuOpen ? (
+                <>
+                  <button
+                    type="button"
+                    aria-hidden
+                    tabIndex={-1}
+                    className="fixed inset-0 z-40 cursor-default"
+                    onClick={() => setMenuOpen(false)}
+                  />
+                  <div
+                    role="menu"
+                    className="absolute right-0 z-50 mt-2 w-56 rounded-2xl border border-border bg-card p-1.5 text-sm shadow-[var(--shadow-float)] animate-in fade-in zoom-in-95 duration-150"
+                  >
+                    <p className="px-3 py-2 text-xs text-muted-foreground">
+                      {session?.institutionalId ?? ""} · {session?.email ?? ""}
+                    </p>
+                    <Link
+                      role="menuitem"
+                      href="/change-password"
+                      onClick={() => setMenuOpen(false)}
+                      className="block rounded-lg px-3 py-2 hover:bg-muted"
+                    >
+                      Change password
+                    </Link>
+                    <button
+                      role="menuitem"
+                      type="button"
+                      onClick={logout}
+                      className="block w-full rounded-lg px-3 py-2 text-left hover:bg-muted"
+                    >
+                      Log out
+                    </button>
+                  </div>
+                </>
+              ) : null}
+            </div>
           </div>
         </div>
       </header>
 
       {drawer ? (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setDrawer(false)}
-            aria-hidden
-          />
-          <div className="glass-strong rise absolute inset-y-0 left-0 w-72 max-w-[85vw] rounded-none p-4">
-            <div className="mb-4 flex items-center justify-between">
-              <p className="font-semibold">Menu</p>
+          <div className="absolute inset-0 bg-black/40" onClick={() => setDrawer(false)} aria-hidden />
+          <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] border-r border-border bg-background p-4 animate-in slide-in-from-left duration-200">
+            <div className="mb-6 flex items-center justify-between">
+              <Wordmark />
               <button
                 type="button"
-                className="grid size-10 place-items-center rounded-xl hover:bg-[var(--nav-active-bg)]"
+                className="grid size-9 place-items-center rounded-full hover:bg-muted"
                 aria-label="Close navigation"
                 onClick={() => setDrawer(false)}
               >
-                <X className="size-5" aria-hidden />
+                <X className="size-4" aria-hidden />
               </button>
             </div>
             <nav aria-label="Primary">{navList}</nav>
@@ -184,14 +212,14 @@ export function AppShell({
       ) : null}
 
       <div
-        className={cx(
-          "mx-auto flex gap-8 px-4 py-6 sm:px-6 sm:py-8",
+        className={cn(
+          "mx-auto flex gap-10 px-4 py-8 sm:px-6 sm:py-10",
           focusMode ? "max-w-4xl" : "max-w-7xl",
         )}
       >
         {!focusMode ? (
-          <nav aria-label="Primary" className="hidden w-56 shrink-0 lg:block">
-            <div className="glass sticky top-24 rounded-2xl p-2">{navList}</div>
+          <nav aria-label="Primary" className="hidden w-52 shrink-0 lg:block">
+            <div className="sticky top-24">{navList}</div>
           </nav>
         ) : null}
         <main id="main" className="rise min-w-0 flex-1">

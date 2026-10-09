@@ -41,8 +41,8 @@ export default function ChangePasswordPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md items-center px-4 py-12">
-      <form onSubmit={submit} className="glass-strong rise w-full rounded-3xl p-6 sm:p-8">
-        <span className="btn-grad grid size-12 place-items-center rounded-2xl" aria-hidden>
+      <form onSubmit={submit} className="surface-float rise w-full rounded-3xl p-6 sm:p-8">
+        <span className="bg-primary text-primary-foreground grid size-12 place-items-center rounded-2xl" aria-hidden>
           <LockKeyhole className="size-6" />
         </span>
         <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-[var(--nav-active-fg)]">

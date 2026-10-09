@@ -48,7 +48,7 @@ export default function AdminDashboardPage() {
           />
         ))}
       </div>
-      <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">
+      <h2 className="mb-3 mt-10 text-sm font-medium text-muted-foreground">
         Quick actions
       </h2>
       <div className="grid gap-4 sm:grid-cols-3">
@@ -59,11 +59,9 @@ export default function AdminDashboardPage() {
               variant="ghost"
               className="!flex h-full min-h-24 w-full !justify-start gap-3 rounded-2xl px-5 py-4 text-left"
             >
-              <span className="btn-grad grid size-11 shrink-0 place-items-center rounded-xl">
-                <Icon className="size-5" aria-hidden />
-              </span>
+              <Icon className="size-5 shrink-0 text-muted-foreground" aria-hidden />
               <span className="min-w-0 flex-1">
-                <span className="block font-semibold">{label}</span>
+                <span className="block font-medium">{label}</span>
                 <span className="block text-xs font-normal text-[var(--muted)]">{hint}</span>
               </span>
               <ArrowRight className="size-4 text-[var(--muted)]" aria-hidden />

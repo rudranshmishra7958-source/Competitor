@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ShieldAlert } from "lucide-react";
 import type { SecurityAlert } from "@exam/shared";
 import { EmptyState, PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/Card";
+import { sentence } from "@/lib/utils";
 import { fetchSecurityAlerts } from "@/lib/api";
 
 export default function SecurityPage() {
@@ -30,12 +30,9 @@ export default function SecurityPage() {
         <ul className="grid gap-3">
           {alerts.map((alert) => (
             <Card as="li" key={alert.id} className="flex items-start gap-3 text-sm">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--risk-medium-bg)] text-[var(--risk-medium-fg)]">
-                <ShieldAlert className="size-5" aria-hidden />
-              </span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap justify-between gap-2">
-                  <span className="font-medium capitalize">{alert.event.replaceAll("_", " ")}</span>
+                  <span className="font-medium">{sentence(alert.event.replaceAll("_", " "))}</span>
                   <time className="text-xs text-[var(--muted)]">
                     {new Date(alert.createdAt).toLocaleString()}
                   </time>

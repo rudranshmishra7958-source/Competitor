@@ -529,7 +529,7 @@ export function ExamForm({
         ) : null}
       </Card>
 
-      <div className="glass-strong fixed inset-x-0 bottom-0 z-30 flex justify-end gap-3 rounded-none border-x-0 border-b-0 px-4 py-3 sm:px-6">
+      <div className="surface-float fixed inset-x-0 bottom-0 z-30 flex justify-end gap-3 rounded-none border-x-0 border-b-0 px-4 py-3 sm:px-6">
         <ButtonLink href="/admin/exams" variant="secondary">
           Back to list
         </ButtonLink>

@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Eye, Maximize, PlayCircle, ShieldCheck, Server, EyeOff, Video } from "lucide-react";
+import { PlayCircle, ShieldCheck } from "lucide-react";
 import { FramingCheck } from "@/components/proctor/FramingCheck";
 import type { Exam } from "@exam/shared";
 import { Button } from "@/components/ui/Button";
@@ -40,7 +40,7 @@ export default function PrecheckPage() {
   }
 
   if (!exam) {
-    return <p className="glass rounded-2xl p-6 text-sm text-[var(--muted)]">Exam not found.</p>;
+    return <p className="surface rounded-2xl p-6 text-sm text-[var(--muted)]">Exam not found.</p>;
   }
 
   const mcqCount = questionsForExam(exam).filter((q) => q.kind === "mcq").length;
@@ -119,21 +119,18 @@ export default function PrecheckPage() {
   const checks = [
     {
       title: "What is recorded",
-      Icon: Eye,
       body: webcam
         ? "Tab leave, focus, fullscreen, clipboard actions (not the text), and a DevTools signal. Your faculty enabled webcam proctoring: the camera is analysed on this device and still snapshots are kept."
         : "Tab leave, focus, fullscreen, clipboard actions (not the text), and a DevTools signal. If you connect the agent: program name, display count, and network state.",
     },
     {
       title: "What is refused",
-      Icon: EyeOff,
       body: webcam
         ? "No video recording, no audio, keystrokes, window titles, URLs, or files. The camera turns off when you submit."
         : "No face, voice, keystrokes, window titles, URLs, screenshots, or files. A second phone is out of scope.",
     },
     {
       title: "Server session",
-      Icon: Server,
       body: "Start registers this attempt on the API so the proctor can see events. If the API is down, the exam still opens in lower-assurance mode.",
     },
   ];
@@ -152,11 +149,8 @@ export default function PrecheckPage() {
         The score is evidence for a person, not an automatic fail.
       </p>
       <ul className="mt-6 grid gap-3">
-        {checks.map(({ title, body, Icon }) => (
+        {checks.map(({ title, body }) => (
           <Card as="li" key={title} className="flex gap-4">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]">
-              <Icon className="size-5" aria-hidden />
-            </span>
             <div>
               <p className="font-semibold">{title}</p>
               <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">{body}</p>
@@ -166,9 +160,6 @@ export default function PrecheckPage() {
         {webcam ? (
           <Card as="li" className="flex flex-col gap-4">
             <div className="flex gap-4">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--risk-medium-bg)] text-[var(--risk-medium-fg)]">
-                <Video className="size-5" aria-hidden />
-              </span>
               <div className="text-sm">
                 <p className="font-semibold">Webcam proctoring is required for this exam</p>
                 <ul className="mt-1 list-disc space-y-1 pl-5 text-[var(--muted)]">
@@ -206,9 +197,6 @@ export default function PrecheckPage() {
           </Card>
         ) : null}
         <Card as="li" className="flex gap-4">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]">
-            <Maximize className="size-5" aria-hidden />
-          </span>
           <div className="min-w-0">
             <p className="font-semibold">Fullscreen</p>
             <p className="mt-1 text-sm text-[var(--muted)]">

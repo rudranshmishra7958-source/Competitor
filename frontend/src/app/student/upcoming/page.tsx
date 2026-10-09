@@ -59,7 +59,7 @@ export default function UpcomingExamsPage() {
               <Card as="li" key={exam.id} interactive className="flex flex-col">
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="text-lg font-semibold leading-snug">{exam.title}</h2>
-                  <Badge tone={live ? "low" : "accent"} className="shrink-0 capitalize">
+                  <Badge tone={live ? "low" : "accent"} className="shrink-0">
                     {live ? "Open now" : status === "scheduled" && exam.startsAt
                       ? `Opens ${new Date(exam.startsAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}`
                       : status}

@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Secure Examination Platform",
-  description: "Institution-provisioned exam portal with explainable integrity signals.",
+  title: { default: "Vigil", template: "%s · Vigil" },
+  description: "Online exams with clear, reviewable integrity evidence.",
 };
 
 // Applies the saved theme before first paint so there is no light/dark flash.

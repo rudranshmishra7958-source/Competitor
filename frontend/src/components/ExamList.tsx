@@ -8,6 +8,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { TableWrap, td, th } from "@/components/ui/Table";
 import { canEditExam, examFormatLabel, examStatus, loadStore } from "@/lib/exam-store";
 import type { Exam } from "@exam/shared";
+import { sentence } from "@/lib/utils";
 import { studentRoster } from "@/lib/exam-store";
 
 const statusTone = {
@@ -72,8 +73,8 @@ export function ExamList() {
                     </span>
                   </td>
                   <td className={td}>
-                    <Badge tone={statusTone[status as keyof typeof statusTone] ?? "neutral"} className="capitalize">
-                      {status}
+                    <Badge tone={statusTone[status as keyof typeof statusTone] ?? "neutral"} >
+                      {sentence(status)}
                     </Badge>
                   </td>
                   <td className={td}>

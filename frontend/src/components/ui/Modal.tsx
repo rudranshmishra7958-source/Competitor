@@ -59,7 +59,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="glass-strong rise relative w-full max-w-md rounded-2xl p-6"
+        className="surface-float rise relative w-full max-w-md rounded-2xl p-6"
       >
         <h2 className="text-lg font-semibold">{title}</h2>
         <div className="mt-3">{children}</div>

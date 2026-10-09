@@ -1,4 +1,4 @@
-import { cx } from "./cx";
+import { cn } from "@/lib/utils";
 
 export function TableWrap({
   caption,
@@ -10,7 +10,7 @@ export function TableWrap({
   className?: string;
 }) {
   return (
-    <div className={cx("glass overflow-x-auto rounded-2xl", className)}>
+    <div className={cn("overflow-x-auto rounded-2xl border border-border bg-card", className)}>
       <table className="w-full min-w-[40rem] text-left text-sm">
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         {children}
@@ -19,6 +19,5 @@ export function TableWrap({
   );
 }
 
-export const th =
-  "px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted)] bg-[var(--nav-active-bg)]";
-export const td = "px-4 py-3 align-middle border-t border-[var(--border)]";
+export const th = "px-4 py-3 text-xs font-medium text-muted-foreground border-b border-border";
+export const td = "px-4 py-3.5 align-middle border-t border-border first:border-t-0";

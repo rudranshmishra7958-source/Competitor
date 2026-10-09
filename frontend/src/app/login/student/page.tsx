@@ -1,9 +1,8 @@
+import type { Metadata } from "next";
 import { LoginForm } from "@/components/LoginForm";
 
+export const metadata: Metadata = { title: "Student sign in" };
+
 export default function StudentLoginPage() {
-  return (
-    <div className="flex min-h-full items-center justify-center px-6 py-16">
-      <LoginForm role="student" />
-    </div>
-  );
+  return <LoginForm role="student" />;
 }

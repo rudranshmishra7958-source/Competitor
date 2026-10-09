@@ -64,7 +64,7 @@ export default function WrittenExamPage() {
   }
 
   if (questions.length === 0) {
-    return <p className="glass rounded-2xl p-6 text-sm text-[var(--muted)]">This exam has no written prompts.</p>;
+    return <p className="surface rounded-2xl p-6 text-sm text-[var(--muted)]">This exam has no written prompts.</p>;
   }
 
   const remaining = Date.parse(attempt.expiresAt) - Date.now();

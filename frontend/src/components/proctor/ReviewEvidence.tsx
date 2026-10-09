@@ -15,6 +15,7 @@ import type { Incident, PriorityLevel, ReviewPriority, SnapshotInfo } from "@exa
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { snapshotObjectUrl } from "@/lib/api";
+import { sentence } from "@/lib/utils";
 
 const LEVEL_TONE: Record<PriorityLevel, "low" | "medium" | "high"> = {
   low: "low",
@@ -64,8 +65,8 @@ export function SnapshotImage({
 export function PriorityBadge({ priority }: { priority?: ReviewPriority }) {
   if (!priority) return null;
   return (
-    <Badge tone={LEVEL_TONE[priority.level]} icon={<Gauge className="size-3.5" aria-hidden />} className="capitalize">
-      {priority.level} priority · {priority.score}
+    <Badge tone={LEVEL_TONE[priority.level]} icon={<Gauge className="size-3.5" aria-hidden />} >
+      {sentence(priority.level)} priority · {priority.score}
     </Badge>
   );
 }
@@ -96,7 +97,7 @@ export function PriorityPanel({
           </span>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">Review priority</p>
+          <p className="text-sm text-muted-foreground">Review priority</p>
           {priority.reasons.length ? (
             <ul className="mt-1 space-y-1 text-sm">
               {priority.reasons.map((reason) => (
@@ -158,13 +159,13 @@ function TrustItem({
   return (
     <div className="rounded-xl bg-[var(--nav-active-bg)] px-3 py-2" title={hint}>
       <dt className="text-[var(--muted)]">{label}</dt>
-      <dd className="mt-0.5 flex items-center gap-1 font-semibold first-letter:uppercase">
+      <dd className="mt-0.5 flex items-center gap-1 font-medium">
         {good === true ? (
           <ShieldCheck className="size-3.5 text-[var(--risk-low-fg)]" aria-hidden />
         ) : good === false ? (
           <ShieldAlert className="size-3.5 text-[var(--risk-medium-fg)]" aria-hidden />
         ) : null}
-        {value}
+        {sentence(value)}
       </dd>
     </div>
   );
@@ -179,7 +180,7 @@ export function CheckFirstList({
 }) {
   if (!incidents.length) {
     return (
-      <p className="glass rounded-2xl px-4 py-6 text-center text-sm text-[var(--muted)]">
+      <p className="surface rounded-2xl px-4 py-6 text-center text-sm text-[var(--muted)]">
         No incidents to review.
       </p>
     );
@@ -197,7 +198,7 @@ export function CheckFirstList({
               <Badge tone={incident.priority >= 6 ? "high" : incident.priority >= 3 ? "medium" : "low"}>
                 Priority {incident.priority}
               </Badge>
-              <Badge className="capitalize">{incident.category}</Badge>
+              <Badge>{sentence(incident.category)}</Badge>
               {!incident.scored ? <Badge>Log only</Badge> : null}
             </div>
             <p className="mt-1 text-[var(--muted)]">{incident.reason}</p>
@@ -218,7 +219,7 @@ export function CheckFirstList({
             </p>
           </div>
           {incident.snapshotIds.length ? (
-            <div className="flex gap-2">
+            <div className="flex gap-2 self-start">
               {incident.snapshotIds.slice(0, 2).map((id) => (
                 <button
                   key={id}
@@ -315,7 +316,7 @@ export function SnapshotLightbox({
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label="Snapshot viewer">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden />
-      <div className="glass-strong rise relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl p-4">
+      <div className="surface-float rise relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl p-4">
         <div className="mb-3 flex items-center justify-between gap-3">
           <p className="text-sm font-semibold">
             {KIND_LABEL[current.kind]}
