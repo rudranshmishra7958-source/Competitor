@@ -28,18 +28,27 @@ export const RULE_WEIGHTS: Record<string, number> = {
   contextmenu: 1,
   devtools_open: 3,
   navigation_away: 2,
-  process_blacklisted: 3,
+  process_blacklisted: 5,
   multiple_displays: 2,
   virtual_machine: 2,
 };
 
-export const PROHIBITED_APP_NAMES = new Set([
-  "discord.exe",
-  "telegram.exe",
-  "slack.exe",
-  "whatsapp.exe",
-  "chatgpt.exe",
-  "copilot.exe",
+/** Mirrors backend ALLOWED_APPS: anything else in focus counts as another app. */
+export const ALLOWED_APPS = new Set([
+  "chrome.exe",
+  "msedge.exe",
+  "firefox.exe",
+  "brave.exe",
+  "opera.exe",
+  "safari",
+  "python.exe",
+  "pythonw.exe",
+  "py.exe",
+  "explorer.exe",
+  "lockapp.exe",
+  "searchhost.exe",
+  "shellexperiencehost.exe",
+  "startmenuexperiencehost.exe",
 ]);
 
 export type PolicyModeResult = "enforce" | "allow_but_log" | "ignore";
@@ -47,8 +56,8 @@ export type PolicyModeResult = "enforce" | "allow_but_log" | "ignore";
 export function effectiveType(type: string, metadata: Record<string, unknown> = {}): string {
   if (type in RULE_WEIGHTS) return type;
   if (type === "foreground_app_changed") {
-    const app = String(metadata.application ?? metadata.name ?? "").toLowerCase();
-    if (PROHIBITED_APP_NAMES.has(app)) return "process_blacklisted";
+    const app = String(metadata.application ?? metadata.name ?? "").trim().toLowerCase();
+    if (app && app !== "unknown" && !ALLOWED_APPS.has(app)) return "process_blacklisted";
   }
   if (type === "display_state_changed" && Number(metadata.count ?? 0) > 1) return "multiple_displays";
   return type;

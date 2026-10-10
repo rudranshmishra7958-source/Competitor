@@ -66,7 +66,7 @@ RULE_WEIGHTS = {
     "contextmenu": 1,
     "devtools_open": 3,
     "navigation_away": 2,
-    "process_blacklisted": 3,
+    "process_blacklisted": 5,
     "multiple_displays": 2,
     "virtual_machine": 2,
     "face_absent": 2,
@@ -78,9 +78,47 @@ RULE_WEIGHTS = {
 }
 
 
-def event_points(effective: str, metadata: dict) -> int:
-    """Base weight, plus one point per extra 10 s away from the camera (capped)."""
+# Apps that may be in focus during an exam. Anything else the agent reports is scored.
+ALLOWED_APPS = {
+    "chrome.exe",
+    "msedge.exe",
+    "firefox.exe",
+    "brave.exe",
+    "opera.exe",
+    "safari",
+    "python.exe",
+    "pythonw.exe",
+    "py.exe",
+    "explorer.exe",
+    "lockapp.exe",
+    "searchhost.exe",
+    "shellexperiencehost.exe",
+    "startmenuexperiencehost.exe",
+}
+
+
+def _policy_weight(policy: dict | None, key: str) -> int | None:
+    weights = (policy or {}).get("weights")
+    if not isinstance(weights, dict) or key not in weights:
+        return None
+    try:
+        return max(0, min(10, int(weights[key])))
+    except (TypeError, ValueError):
+        return None
+
+
+def allowed_apps(policy: dict | None) -> set[str]:
+    extra = (policy or {}).get("allowedApps") or []
+    return ALLOWED_APPS | {str(name).strip().lower() for name in extra if str(name).strip()}
+
+
+def event_points(effective: str, metadata: dict, policy: dict | None = None) -> int:
+    """Base weight (per-exam override for other apps), plus time away from the camera."""
     points = RULE_WEIGHTS[effective]
+    if effective == "process_blacklisted":
+        override = _policy_weight(policy, "externalApp")
+        if override is not None:
+            points = override
     if effective == "face_absent":
         seconds = float(metadata.get("durationMs") or 0) / 1000
         points += min(3, max(0, int((seconds - 5) // 10)))
@@ -114,13 +152,13 @@ def event_scored(policy: dict, event_type: str) -> bool:
     return event_type in RULE_WEIGHTS and _policy_mode(policy, event_type) == "enforce"
 
 
-def _effective_type(row: MonitorEventRow) -> str:
+def _effective_type(row: MonitorEventRow, policy: dict | None = None) -> str:
     if row.type in RULE_WEIGHTS:
         return row.type
     metadata = json.loads(row.metadata_json or "{}")
     if row.type == "foreground_app_changed":
-        app = str(metadata.get("application") or metadata.get("name") or "").lower()
-        if app in PROHIBITED_APP_NAMES:
+        app = str(metadata.get("application") or metadata.get("name") or "").strip().lower()
+        if app and app != "unknown" and app not in allowed_apps(policy):
             return "process_blacklisted"
     if row.type == "display_state_changed" and int(metadata.get("count") or 0) > 1:
         return "multiple_displays"
@@ -128,16 +166,18 @@ def _effective_type(row: MonitorEventRow) -> str:
 
 
 def classify_event(row: MonitorEventRow, policy: dict) -> dict:
-    effective = _effective_type(row)
+    effective = _effective_type(row, policy)
     in_rules = effective in RULE_WEIGHTS
     mode = _policy_mode(policy, effective) if in_rules else "ignore"
+    if effective == "process_blacklisted" and _policy_weight(policy, "externalApp") == 0 and mode == "enforce":
+        mode = "allow_but_log"
     scored = in_rules and mode == "enforce"
     return {
         "effectiveType": effective,
         "policyKey": POLICY_EVENT_MAP.get(effective) or POLICY_EVENT_MAP.get(row.type),
         "mode": mode,
         "scored": scored,
-        "points": event_points(effective, json.loads(row.metadata_json or "{}")) if scored else 0,
+        "points": event_points(effective, json.loads(row.metadata_json or "{}"), policy) if scored else 0,
     }
 
 

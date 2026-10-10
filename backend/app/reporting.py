@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.models import ExamSession, MonitorEventRow, ReviewDecision, User
 from app.proctoring import build_incidents, session_priority, session_snapshots, snapshot_json
-from app.risk import classify_event, endpoint_required, score_session
+from app.risk import allowed_apps, classify_event, endpoint_required, score_session
 
 
 def application_from_metadata(raw: str | dict | None) -> str | None:
@@ -33,7 +33,9 @@ def application_from_metadata(raw: str | dict | None) -> str | None:
     return name[:128]
 
 
-def latest_anomaly_application(db: Session, session_id: str) -> str | None:
+def latest_anomaly_application(db: Session, session_id: str, policy: dict | None = None) -> str | None:
+    """Most recent non-allowed app the agent saw (switching back to the browser doesn't hide it)."""
+    allowed = allowed_apps(policy)
     rows = (
         db.query(MonitorEventRow)
         .filter_by(session_id=session_id)
@@ -45,7 +47,28 @@ def latest_anomaly_application(db: Session, session_id: str) -> str | None:
         if row.type not in {"foreground_app_changed", "process_blacklisted"} and row.source != "endpoint":
             continue
         name = application_from_metadata(row.metadata_json)
-        if name:
+        if name and name.lower() not in allowed and name.lower() != "unknown":
+            return name
+    return None
+
+
+def app_near(db: Session, session_id: str, at: datetime, policy: dict | None, window: int = 10) -> str | None:
+    """Non-allowed app the agent reported within `window` seconds of a browser event."""
+    allowed = allowed_apps(policy)
+    rows = (
+        db.query(MonitorEventRow)
+        .filter(
+            MonitorEventRow.session_id == session_id,
+            MonitorEventRow.source == "endpoint",
+            MonitorEventRow.timestamp >= at - timedelta(seconds=window),
+            MonitorEventRow.timestamp <= at + timedelta(seconds=window),
+        )
+        .order_by(MonitorEventRow.timestamp.desc())
+        .all()
+    )
+    for row in rows:
+        name = application_from_metadata(row.metadata_json)
+        if name and name.lower() not in allowed and name.lower() != "unknown":
             return name
     return None
 
@@ -124,7 +147,9 @@ def session_live_row(db: Session, session: ExamSession, persist: bool = False) -
         "risk": risk["risk"],
         "score": risk["score"],
         "latestAnomaly": risk["latestAnomaly"],
-        "latestAnomalyApplication": latest_anomaly_application(db, session.session_id),
+        "latestAnomalyApplication": latest_anomaly_application(
+            db, session.session_id, json.loads(session.policy_json or "{}")
+        ),
         "review": _review_json(review),
         "breakdown": _breakdown(risk),
         **_priority_fields(db, session),

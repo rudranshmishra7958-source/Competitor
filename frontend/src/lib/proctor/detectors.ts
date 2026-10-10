@@ -31,7 +31,7 @@ const BLOCKED_GRACE_MS = 3_000;
  * Debounced rules so a single bad frame never raises an incident:
  *  - away: no face for `awaySeconds` continuously (closes with the full duration)
  *  - second person: 2+ faces/people in 3 of the last 5 frames
- *  - device: phone/laptop/screen in 2 of the last 3 object passes
+ *  - device: phone/laptop/screen (score >= 0.4) in 2 of the last 4 object passes
  *  - framing: desk/shoulders lost 10 s while a face is still visible
  *  - blocked: dark or frozen picture for 3 s
  */
@@ -66,8 +66,8 @@ export class CameraRules {
     }
 
     if (this.policy.detectDevices && sample.objects) {
-      const strong = sample.objects.devices.filter((d) => d.score >= 0.6);
-      this.deviceWindow = [...this.deviceWindow, strong].slice(-3);
+      const strong = sample.objects.devices.filter((d) => d.score >= 0.4);
+      this.deviceWindow = [...this.deviceWindow, strong].slice(-4);
       const hits = this.deviceWindow.filter((frame) => frame.length > 0).length;
       const best = this.deviceWindow.flat().sort((a, b) => b.score - a.score)[0];
       this.windowed("device_detected", hits >= 2, hits === 0, at, out, {

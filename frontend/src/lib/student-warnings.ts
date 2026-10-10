@@ -2,6 +2,8 @@ import { readApplicationName } from "@/lib/app-name";
 
 export type ViolationNotice = {
   message: string;
+  /** App the agent saw in focus, when known. */
+  application?: string;
   pointsAdded?: number;
   totalScore?: number;
   effectiveType: string;
@@ -56,6 +58,18 @@ export function cameraWarningMessage(type: string, metadata: Record<string, unkn
 }
 
 const FOREGROUND_TYPES = new Set(["process_blacklisted", "foreground_app_changed"]);
+export const TAB_TYPES = new Set(["visibility_hidden", "window_blur", "navigation_away"]);
+
+/** "You left the exam tab and opened discord.exe." */
+export function combinedAppMessage(tabType: string, app: string): string {
+  const left =
+    tabType === "window_blur"
+      ? "You switched away from the exam window"
+      : tabType === "navigation_away"
+        ? "You left the exam page"
+        : "You left the exam tab";
+  return `${left} and opened ${app}. This was recorded for review.`;
+}
 
 export function studentViolationMessage(
   type: string,
@@ -63,7 +77,10 @@ export function studentViolationMessage(
 ): string {
   const name = readApplicationName(metadata);
   if (name && FOREGROUND_TYPES.has(type)) {
-    return `You opened another application: ${name}.`;
+    return `You opened ${name} during the exam. This was recorded for review.`;
+  }
+  if (name && TAB_TYPES.has(type)) {
+    return combinedAppMessage(type, name);
   }
   return MESSAGES[type] ?? "A monitored action broke an exam rule.";
 }

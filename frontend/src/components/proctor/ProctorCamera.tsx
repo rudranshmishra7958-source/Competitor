@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Minimize2, Maximize2, VideoOff } from "lucide-react";
+import { GripHorizontal, Minimize2, Maximize2, VideoOff } from "lucide-react";
 import type { MonitorEvent, MonitorEventType, WebcamPolicy } from "@exam/shared";
 import { postMonitorEvent, uploadSnapshot } from "@/lib/api";
 import { CameraRules, type CameraEmission, type CameraSample } from "@/lib/proctor/detectors";
 import { FrameProbe, captureJpeg, looksVirtual } from "@/lib/proctor/frame";
-import { detectFaces, detectFraming, detectObjects, loadVision } from "@/lib/proctor/vision";
+import { detectFaces, detectFraming, detectObjects, loadVision, type DetectionBox } from "@/lib/proctor/vision";
 import { cameraWarningMessage, type ViolationNotice } from "@/lib/student-warnings";
 
 export type CameraStatus = "starting" | "live" | "blocked" | "unavailable";
 
 const TICK_MS = 350;
+const CORNER_KEY = "vigil-camera-corner";
+type Corner = "tr" | "br" | "bl" | "tl";
+const CORNERS: Corner[] = ["tr", "br", "bl", "tl"];
 
 /**
  * Webcam proctoring for one attempt. Analysis runs on this device; only events and
@@ -37,6 +40,12 @@ export function ProctorCamera({
   const [status, setStatus] = useState<CameraStatus>("starting");
   const [faceVisible, setFaceVisible] = useState(true);
   const [minimized, setMinimized] = useState(false);
+  const [corner, setCorner] = useState<Corner>("tr");
+  const [drift, setDrift] = useState(0);
+  const [typing, setTyping] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [debug, setDebug] = useState(false);
+  const [boxes, setBoxes] = useState<DetectionBox[]>([]);
   const callbacks = useRef({ onIncident, onStatus });
   callbacks.current = { onIncident, onStatus };
 
@@ -128,8 +137,11 @@ export function ProctorCamera({
         sample.framed = framing.framed;
         sample.posePeople = framing.people;
       }
-      if (frame % 3 === 1 && (policy.detectDevices || policy.detectSecondPerson)) {
-        sample.objects = detectObjects(models, video) ?? undefined;
+      // Objects every other tick (~1.4/s): phones are small and often only briefly in view.
+      if (frame % 2 === 1 && (policy.detectDevices || policy.detectSecondPerson)) {
+        const objects = detectObjects(models, video);
+        sample.objects = objects ?? undefined;
+        if (debug) setBoxes(objects?.boxes ?? []);
       }
       setFaceVisible(faces.count > 0);
       for (const emission of rules.update(sample)) void handle(emission);
@@ -194,24 +206,116 @@ export function ProctorCamera({
       stream?.getTracks().forEach((t) => t.stop());
       if (videoElement) videoElement.srcObject = null;
     };
-  }, [sessionId, examId, studentId, policy]);
+  }, [sessionId, examId, studentId, policy, debug]);
 
-  const dot =
-    status === "live" ? (faceVisible ? "bg-red-500" : "bg-amber-400") : "bg-[var(--muted)]";
+  // Corner docking: remembered per browser, snapped after a drag.
+  useEffect(() => {
+    let saved: Corner | null = null;
+    try {
+      saved = localStorage.getItem(CORNER_KEY) as Corner | null;
+    } catch {
+      /* storage unavailable */
+    }
+    setCorner(saved && CORNERS.includes(saved) ? saved : window.innerWidth >= 640 ? "tr" : "br");
+    setDebug(new URLSearchParams(window.location.search).has("camdebug"));
+  }, []);
+
+  // Follow scrolling with a small, eased lag so the preview feels attached to the page.
+  useEffect(() => {
+    let last = window.scrollY;
+    let reset: number | null = null;
+    const onScroll = () => {
+      const delta = window.scrollY - last;
+      last = window.scrollY;
+      setDrift(Math.max(-14, Math.min(14, -delta * 0.6)));
+      if (reset) window.clearTimeout(reset);
+      reset = window.setTimeout(() => setDrift(0), 120);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (reset) window.clearTimeout(reset);
+    };
+  }, []);
+
+  // Shrink to a small pill while the student types an answer, so it never competes for attention.
+  useEffect(() => {
+    const isField = (el: EventTarget | null) =>
+      el instanceof HTMLElement && (el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && (el as HTMLInputElement).type === "text"));
+    const onIn = (e: FocusEvent) => isField(e.target) && setTyping(true);
+    const onOut = (e: FocusEvent) => isField(e.target) && setTyping(false);
+    document.addEventListener("focusin", onIn);
+    document.addEventListener("focusout", onOut);
+    return () => {
+      document.removeEventListener("focusin", onIn);
+      document.removeEventListener("focusout", onOut);
+    };
+  }, []);
+
+  function startDrag(event: React.PointerEvent) {
+    if (event.button !== 0) return;
+    const onUp = (up: PointerEvent) => {
+      window.removeEventListener("pointerup", onUp);
+      const vertical = up.clientY < window.innerHeight / 2 ? "t" : "b";
+      const horizontal = up.clientX < window.innerWidth / 2 ? "l" : "r";
+      const next = `${vertical}${horizontal}` as Corner;
+      setCorner(next);
+      setDragging(false);
+      try {
+        localStorage.setItem(CORNER_KEY, next);
+      } catch {
+        /* storage unavailable */
+      }
+    };
+    setDragging(true);
+    window.addEventListener("pointerup", onUp);
+  }
+
+  const compact = minimized || typing;
+  const dot = status === "live" ? (faceVisible ? "bg-red-500" : "bg-amber-400") : "bg-muted-foreground";
+  const position = {
+    tr: "right-3 top-20",
+    br: "right-3 bottom-3",
+    bl: "left-3 bottom-3",
+    tl: "left-3 top-20",
+  }[corner];
+
   return (
     <aside
       aria-label="Your camera"
-      className={`surface-float fixed right-3 top-20 z-30 overflow-hidden rounded-2xl transition-all ${
-        minimized ? "w-28" : "w-44 sm:w-56"
-      }`}
+      style={{ transform: `translateY(${drift}px)` }}
+      className={`fixed z-30 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-float)] transition-[transform,opacity,width] duration-300 ease-out motion-reduce:transition-none ${position} ${
+        compact ? "w-28" : "w-40 sm:w-44"
+      } ${dragging ? "cursor-grabbing opacity-60" : "opacity-75 hover:opacity-100 focus-within:opacity-100"}`}
     >
-      <div className="relative">
-        <video
-          ref={videoRef}
-          muted
-          playsInline
-          className="aspect-[4/3] w-full -scale-x-100 bg-black object-cover"
-        />
+      <div className={`relative ${compact ? "h-px overflow-hidden opacity-0" : ""}`}>
+        <video ref={videoRef} muted playsInline className="aspect-[4/3] w-full -scale-x-100 bg-black object-cover" />
+        {debug && boxes.length ? (
+          <svg viewBox="0 0 1 1" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 size-full -scale-x-100" aria-hidden>
+            {boxes.map((box, index) => (
+              <g key={index}>
+                <rect
+                  x={box.x}
+                  y={box.y}
+                  width={box.w}
+                  height={box.h}
+                  fill="none"
+                  stroke={box.label === "person" ? "#9fb48a" : "#e5735c"}
+                  strokeWidth="0.008"
+                />
+              </g>
+            ))}
+          </svg>
+        ) : null}
+        {debug && boxes.length ? (
+          <ul className="absolute left-1 top-1 space-y-0.5 text-[10px] text-white">
+            {boxes.map((box, index) => (
+              <li key={index} className="rounded bg-black/70 px-1">
+                {box.label} {Math.round(box.score * 100)}%
+              </li>
+            ))}
+          </ul>
+        ) : null}
         {status !== "live" ? (
           <div className="absolute inset-0 grid place-items-center bg-black/70 p-2 text-center text-xs text-white">
             <span className="flex flex-col items-center gap-1">
@@ -229,10 +333,18 @@ export function ProctorCamera({
           </div>
         ) : null}
       </div>
-      <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 text-[11px]">
-        <span className="inline-flex items-center gap-1.5 font-medium">
-          <span className={`size-2 rounded-full ${dot} ${status === "live" ? "animate-pulse" : ""}`} aria-hidden />
-          {minimized ? "Monitored" : "Monitored · snapshots only"}
+      <div className="flex items-center justify-between gap-1 px-2 py-1.5 text-[11px]">
+        <button
+          type="button"
+          onPointerDown={startDrag}
+          aria-label="Drag to move the camera preview to another corner"
+          className="grid size-6 cursor-grab place-items-center rounded-md text-muted-foreground hover:bg-muted"
+        >
+          <GripHorizontal className="size-3.5" aria-hidden />
+        </button>
+        <span className="inline-flex min-w-0 items-center gap-1.5 font-medium">
+          <span className={`size-2 shrink-0 rounded-full ${dot} ${status === "live" ? "animate-pulse" : ""}`} aria-hidden />
+          <span className="truncate">{compact ? "Monitored" : "Monitored · stills only"}</span>
         </span>
         <button
           type="button"

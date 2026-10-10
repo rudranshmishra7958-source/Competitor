@@ -408,6 +408,46 @@ export function ExamForm({
           />
           Require endpoint agent (hard block if missing)
         </label>
+        <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
+          <label className="block text-sm">
+            Weight when another app is in focus
+            <select
+              className={field}
+              disabled={locked}
+              value={String(policy.weights?.externalApp ?? 5)}
+              onChange={(e) =>
+                setPolicy({ ...policy, weights: { ...policy.weights, externalApp: Number(e.target.value) } })
+              }
+            >
+              <option value="5">5 · highest (default)</option>
+              <option value="3">3 · medium</option>
+              <option value="1">1 · low</option>
+              <option value="0">Log only</option>
+            </select>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              The agent reports every app in focus. Browsers are always allowed.
+            </span>
+          </label>
+          <label className="block text-sm">
+            Also allow these apps
+            <input
+              className={field}
+              disabled={locked}
+              placeholder="e.g. code.exe, calc.exe"
+              value={(policy.allowedApps ?? []).join(", ")}
+              onChange={(e) =>
+                setPolicy({
+                  ...policy,
+                  allowedApps: e.target.value
+                    .split(",")
+                    .map((name) => name.trim())
+                    .filter(Boolean),
+                })
+              }
+            />
+            <span className="mt-1 block text-xs text-muted-foreground">Comma-separated program names.</span>
+          </label>
+        </div>
       </Card>
 
       <Card as="section" className="space-y-4 sm:p-6">

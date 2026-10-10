@@ -34,9 +34,15 @@ export function IntegrityViolationAlert({
       >
         <p className="flex items-center gap-2 text-sm font-medium text-[var(--risk-high-fg)]">
           {camera ? <Video className="size-4" aria-hidden /> : <OctagonAlert className="size-4" aria-hidden />}
-          {camera ? "You are being monitored on camera" : "Integrity warning"}
+          {camera ? "You are being monitored on camera" : notice.application ? "You are being monitored" : "Integrity warning"}
         </p>
         <p className="mt-2 text-lg font-medium leading-snug">{notice.message}</p>
+        {notice.application ? (
+          <p className="mt-3 inline-flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5 font-mono text-sm">
+            <span className="text-muted-foreground">App detected</span>
+            {notice.application}
+          </p>
+        ) : null}
         {scoreLine ? <p className="mt-3 text-sm text-muted-foreground">{scoreLine}</p> : null}
         <button
           type="button"

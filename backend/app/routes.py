@@ -21,6 +21,7 @@ from app.models import (
 )
 from app.reporting import (
     _timeline_events,
+    app_near,
     application_from_metadata,
     report_dto,
     report_pdf,
@@ -390,6 +391,8 @@ def event_ack(db: Session, session_id: str, row: MonitorEventRow | None) -> dict
             "risk": risk["risk"],
         }
         application = application_from_metadata(row.metadata_json)
+        if not application and info["effectiveType"] in {"visibility_hidden", "window_blur", "navigation_away"}:
+            application = app_near(db, session_id, row.timestamp, policy)
         if application:
             violation["application"] = application
         body["violation"] = violation

@@ -117,6 +117,10 @@ export interface ExamSecurityPolicy {
   cameraPresence?: PolicyMode;
   cameraPeople?: PolicyMode;
   cameraDevice?: PolicyMode;
+  /** Per-exam weight overrides; externalApp 0 = log only (default 5, the highest). */
+  weights?: { externalApp?: number };
+  /** Extra apps students may use (e.g. "code.exe"); browsers are always allowed. */
+  allowedApps?: string[];
 }
 
 export type ExamType = "mcq" | "written" | "mixed";

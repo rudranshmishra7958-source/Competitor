@@ -14,6 +14,17 @@ export type VisionModels = {
 
 let loading: Promise<VisionModels> | null = null;
 
+function createObjectDetector(fileset: Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>, model: string) {
+  return ObjectDetector.createFromOptions(fileset, {
+    baseOptions: { modelAssetPath: model, delegate: "CPU" },
+    runningMode: "VIDEO",
+    // Low on purpose: the debounce in detectors.ts filters single noisy frames.
+    scoreThreshold: 0.3,
+    categoryAllowlist: ["person", "cell phone", "laptop", "tv", "remote", "book"],
+    maxResults: 10,
+  });
+}
+
 export function loadVision(): Promise<VisionModels> {
   if (!loading) {
     loading = (async () => {
@@ -29,13 +40,9 @@ export function loadVision(): Promise<VisionModels> {
           runningMode: "VIDEO",
           numPoses: 2,
         }),
-        ObjectDetector.createFromOptions(fileset, {
-          baseOptions: { modelAssetPath: "/models/efficientdet_lite0.tflite", delegate: "CPU" },
-          runningMode: "VIDEO",
-          scoreThreshold: 0.45,
-          categoryAllowlist: ["person", "cell phone", "laptop", "tv", "book"],
-          maxResults: 8,
-        }).catch(() => null),
+        createObjectDetector(fileset, "/models/efficientdet_lite2.tflite").catch(() =>
+          createObjectDetector(fileset, "/models/efficientdet_lite0.tflite").catch(() => null),
+        ),
       ]);
       return { face, pose, objects };
     })();
@@ -88,20 +95,40 @@ export function detectFraming(models: VisionModels, video: HTMLVideoElement): Fr
   return { framed: true, people, hint: "Framing looks good: face to desk is visible." };
 }
 
-export type ObjectResult = { persons: number; devices: { label: string; score: number }[] };
+export type DetectionBox = { label: string; score: number; x: number; y: number; w: number; h: number };
+export type ObjectResult = {
+  persons: number;
+  devices: { label: string; score: number }[];
+  /** Normalised boxes (0..1) for the optional debug overlay. */
+  boxes: DetectionBox[];
+};
 
-const DEVICE_LABELS = new Set(["cell phone", "laptop", "tv"]);
+const DEVICE_LABELS = new Set(["cell phone", "laptop", "tv", "remote"]);
 
 export function detectObjects(models: VisionModels, video: HTMLVideoElement): ObjectResult | null {
   if (!models.objects) return null;
   const result = models.objects.detectForVideo(video, stamp(models.objects));
   let persons = 0;
   const devices: { label: string; score: number }[] = [];
+  const boxes: DetectionBox[] = [];
+  const vw = video.videoWidth || 1;
+  const vh = video.videoHeight || 1;
   for (const detection of result.detections) {
     const top = detection.categories[0];
     if (!top) continue;
     if (top.categoryName === "person" && top.score >= 0.5) persons += 1;
     if (DEVICE_LABELS.has(top.categoryName)) devices.push({ label: top.categoryName, score: top.score });
+    const box = detection.boundingBox;
+    if (box) {
+      boxes.push({
+        label: top.categoryName,
+        score: top.score,
+        x: box.originX / vw,
+        y: box.originY / vh,
+        w: box.width / vw,
+        h: box.height / vh,
+      });
+    }
   }
-  return { persons, devices };
+  return { persons, devices, boxes };
 }

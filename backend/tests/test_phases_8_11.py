@@ -380,3 +380,45 @@ def test_purge_removes_expired_snapshots(client):
         assert purge_expired_snapshots(db) == 1
     assert not os.path.exists(old_path)
     assert os.path.exists(fresh_path)
+
+
+# ---------- Agent app scoring ----------
+
+def app_row(name):
+    import json as _json
+
+    from app.models import MonitorEventRow
+
+    return MonitorEventRow(
+        type="foreground_app_changed",
+        timestamp=utcnow(),
+        received_at=utcnow(),
+        clock_skew_ms=0,
+        exam_id="exam-1",
+        student_id="u-stu-1",
+        session_id="session-1",
+        source="endpoint",
+        metadata_json=_json.dumps({"application": name}),
+    )
+
+
+def test_any_non_allowed_app_scores_highest():
+    from app.risk import classify_event
+
+    policy = {"externalApp": "enforce"}
+    notepad = classify_event(app_row("notepad.exe"), policy)
+    assert notepad["effectiveType"] == "process_blacklisted"
+    assert notepad["scored"] and notepad["points"] == 5
+    chrome = classify_event(app_row("chrome.exe"), policy)
+    assert not chrome["scored"]
+
+
+def test_faculty_can_change_app_weight_and_allowlist():
+    from app.risk import classify_event
+
+    policy = {"externalApp": "enforce", "weights": {"externalApp": 2}, "allowedApps": ["code.exe"]}
+    assert classify_event(app_row("discord.exe"), policy)["points"] == 2
+    assert not classify_event(app_row("code.exe"), policy)["scored"]
+    log_only = {"externalApp": "enforce", "weights": {"externalApp": 0}}
+    info = classify_event(app_row("discord.exe"), log_only)
+    assert not info["scored"] and info["mode"] == "allow_but_log"

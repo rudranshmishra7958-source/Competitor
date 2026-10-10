@@ -23,6 +23,8 @@ const MODELS = {
   "blaze_face_short_range.tflite": `${BUCKET}/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite`,
   "pose_landmarker_lite.task": `${BUCKET}/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`,
   "efficientdet_lite0.tflite": `${BUCKET}/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite`,
+  // Larger detector: much better at small objects such as a phone held near the desk.
+  "efficientdet_lite2.tflite": `${BUCKET}/object_detector/efficientdet_lite2/int8/1/efficientdet_lite2.tflite`,
 };
 
 async function exists(path) {

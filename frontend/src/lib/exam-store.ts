@@ -35,7 +35,7 @@ export const DEFAULT_POLICY: ExamSecurityPolicy = {
   fullscreen: "allow_but_log",
   tabSwitch: "enforce",
   clipboard: "enforce",
-  externalApp: "allow_but_log",
+  externalApp: "enforce",
   externalSearch: "enforce",
   multiWindow: "allow_but_log",
   requireEndpointAgent: false,
@@ -519,6 +519,45 @@ function extraDemoExams(
     mcq("q-demo-cam-2", "HTTP status 404 means:", ["Server error", "Moved permanently", "Not found", "Unauthorized"], 2),
     short("q-demo-cam-3", "What port does HTTPS use by default?", ["443"], {}),
   ];
+  const cyber: Question[] = [
+    mcq("q-cw-sec-1", "Which attack tricks a user into revealing credentials on a fake site?", ["Phishing", "SQL injection", "Buffer overflow", "DDoS"], 0),
+    mcq("q-cw-sec-2", "HTTPS protects data in transit mainly with:", ["TLS encryption", "Base64 encoding", "A firewall", "Two monitors"], 0),
+    mcq("q-cw-sec-3", "A salted hash defends best against:", ["Rainbow-table attacks", "Phishing", "Shoulder surfing", "Power outages"], 0),
+    short("q-cw-sec-4", "What does the 'A' in the CIA triad stand for?", ["availability"]),
+  ];
+  const ml: Question[] = [
+    mcq("q-cw-ml-1", "Overfitting means the model:", ["Fits training data but generalises poorly", "Is too simple", "Has no parameters", "Uses only test data"], 0),
+    mcq("q-cw-ml-2", "Which metric suits an imbalanced binary classifier best?", ["F1 score", "Accuracy only", "Mean squared error", "R squared"], 0),
+    short("q-cw-ml-3", "A model gets 45 of 50 correct. Accuracy in percent?", ["90"], {}),
+    short("q-cw-ml-4", "k-fold cross-validation with k = 5 trains how many models?", ["5"], {}),
+  ];
+  const compiler: Question[] = [
+    mcq("q-cw-cd-1", "Which phase turns characters into tokens?", ["Lexical analysis", "Parsing", "Code generation", "Linking"], 0),
+    mcq("q-cw-cd-2", "An LL(1) parser is:", ["Top-down", "Bottom-up", "Not a parser", "A linker"], 0),
+    short("q-cw-cd-3", "Name the data structure a compiler uses to store identifiers.", ["symbol table"]),
+    {
+      id: "q-cw-cd-w1",
+      kind: "written",
+      prompt: "On paper, draw the parse tree for a + b * c with usual precedence. Photograph it.",
+      attachmentUrl: null,
+      ocrText: null,
+    },
+  ];
+  const strictCamAgent: ExamSecurityPolicy = {
+    ...demoPolicy,
+    fullscreen: "enforce",
+    tabSwitch: "enforce",
+    clipboard: "enforce",
+    externalApp: "enforce",
+    externalSearch: "enforce",
+    multiWindow: "enforce",
+    requireEndpointAgent: true,
+    webcam: { ...DEFAULT_WEBCAM_POLICY },
+    cameraPresence: "enforce",
+    cameraPeople: "enforce",
+    cameraDevice: "enforce",
+    weights: { externalApp: 5 },
+  };
   const tomorrow = new Date(Date.now() + 24 * 60 * 60_000);
   tomorrow.setMinutes(0, 0, 0);
   const lastWeek = new Date(Date.now() - 6 * 24 * 60 * 60_000).toISOString();
@@ -575,6 +614,18 @@ function extraDemoExams(
           cameraDevice: "enforce",
         },
       }),
+      make("ex-cw-cyber", "Cybersecurity final (webcam + agent)", "mcq", cyber, {
+        durationMinutes: 25,
+        policy: strictCamAgent,
+      }),
+      make("ex-cw-ml", "Machine learning quiz (webcam + agent)", "mcq", ml, {
+        durationMinutes: 20,
+        policy: { ...strictCamAgent, fullscreen: "allow_but_log" },
+      }),
+      make("ex-cw-compiler", "Compiler design lab (webcam + agent, strict)", "mixed", compiler, {
+        durationMinutes: 35,
+        policy: { ...strictCamAgent, allowedApps: [] },
+      }),
       make("ex-demo-arch-final", "Computer architecture final (opens tomorrow)", "mcq", archFinal, {
         startsAt: tomorrow.toISOString(),
         durationMinutes: 120,
@@ -591,6 +642,9 @@ function extraDemoExams(
       ...python,
       ...practice,
       ...webcamQuiz,
+      ...cyber,
+      ...ml,
+      ...compiler,
       ...archFinal,
       ...closed,
     ],
@@ -610,6 +664,9 @@ const DEMO_EXAM_IDS = new Set([
   "ex-demo-python",
   "ex-demo-practice",
   "ex-demo-webcam",
+  "ex-cw-cyber",
+  "ex-cw-ml",
+  "ex-cw-compiler",
 ]);
 
 /** Demo exams that should always look scheduled (not yet open). */
@@ -650,6 +707,8 @@ function migrate(data: Partial<ExamStoreData>): ExamStoreData {
     if (!existing) next.exams.push(exam);
     else if (DEMO_EXAM_IDS.has(exam.id) || exam.id.startsWith("ex-seed-")) {
       existing.durationMinutes = exam.durationMinutes;
+      // Demo exams follow the current seeded rules (e.g. other apps now count).
+      if (DEMO_EXAM_IDS.has(exam.id)) existing.policy = exam.policy;
       // New demo accounts should see the demo exams too.
       existing.assignedStudentIds = [
         ...new Set([...existing.assignedStudentIds, ...exam.assignedStudentIds]),

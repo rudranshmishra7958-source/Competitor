@@ -55,6 +55,7 @@ function noticeFromServer(violation: NonNullable<EventIngestResult["violation"]>
     message: studentViolationMessage(violation.effectiveType, {
       application: violation.application,
     }),
+    application: violation.application,
     pointsAdded: violation.pointsAdded,
     totalScore: violation.totalScore,
     effectiveType: violation.effectiveType,
