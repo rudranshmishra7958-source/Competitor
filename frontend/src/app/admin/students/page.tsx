@@ -20,7 +20,7 @@ export default function AdminStudentsPage() {
         </thead>
         <tbody>
           {students.map((s) => (
-            <tr key={s.userId} className="hover:bg-[var(--nav-active-bg)]">
+            <tr key={s.userId} className="hover:bg-muted">
               <td className={`${td} font-mono text-xs`}>{s.institutionalId}</td>
               <td className={`${td} font-medium`}>{s.displayName}</td>
               <td className={td}>{s.email}</td>
@@ -28,7 +28,7 @@ export default function AdminStudentsPage() {
           ))}
         </tbody>
       </TableWrap>
-      <p className="mt-3 text-xs text-[var(--muted)]">
+      <p className="mt-3 text-xs text-muted-foreground">
         Demo logins: any college ID above (STU001 – STU008) or its email, password `password`.
       </p>
     </>

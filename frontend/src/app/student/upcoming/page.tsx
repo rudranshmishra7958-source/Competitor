@@ -58,14 +58,14 @@ export default function UpcomingExamsPage() {
             return (
               <Card as="li" key={exam.id} interactive className="flex flex-col">
                 <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-lg font-semibold leading-snug">{exam.title}</h2>
+                  <h2 className="text-lg font-medium leading-snug">{exam.title}</h2>
                   <Badge tone={live ? "low" : "accent"} className="shrink-0">
                     {live ? "Open now" : status === "scheduled" && exam.startsAt
                       ? `Opens ${new Date(exam.startsAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}`
                       : status}
                   </Badge>
                 </div>
-                <p className="mt-1 text-sm text-[var(--muted)]">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {examFormatLabel(exam)}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -96,7 +96,7 @@ export default function UpcomingExamsPage() {
                       <ArrowRight className="size-4" aria-hidden />
                     </ButtonLink>
                   ) : (
-                    <span className="inline-flex items-center gap-2 text-sm text-[var(--muted)]">
+                    <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                       <Lock className="size-4" aria-hidden />
                       Not open yet
                     </span>

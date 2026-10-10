@@ -83,27 +83,27 @@ export default function SubmittedPage() {
       <Card strong className="flex max-w-2xl flex-wrap items-center gap-5">
         {result && result.gradable > 0 ? <ScoreRing percent={result.percent} /> : null}
         <div className="min-w-0 flex-1 text-sm">
-          <p className="text-lg font-semibold">{title}</p>
+          <p className="text-lg font-medium">{title}</p>
           {result && result.gradable > 0 ? (
             <p className="mt-1 font-medium">
               {result.correct} of {result.gradable} auto-graded questions correct
             </p>
           ) : null}
-          <p className="mt-1 text-[var(--muted)]">
+          <p className="mt-1 text-muted-foreground">
             {when ? `Submitted at ${new Date(when).toLocaleString()}` : "Attempt recorded in this browser."}
           </p>
           {result?.pendingManual ? (
-            <p className="mt-2 inline-flex items-center gap-1.5 text-[var(--muted)]">
+            <p className="mt-2 inline-flex items-center gap-1.5 text-muted-foreground">
               <Hourglass className="size-4" aria-hidden />
               {result.pendingManual} written answer{result.pendingManual === 1 ? "" : "s"} awaiting
               faculty grading
             </p>
           ) : null}
           {scans.length ? (
-            <p className="mt-1 text-[var(--muted)]">{scans.length} written scan(s) kept in your history.</p>
+            <p className="mt-1 text-muted-foreground">{scans.length} written scan(s) kept in your history.</p>
           ) : null}
           {webcam ? (
-            <p className="mt-2 inline-flex items-center gap-1.5 text-[var(--muted)]">
+            <p className="mt-2 inline-flex items-center gap-1.5 text-muted-foreground">
               <VideoOff className="size-4" aria-hidden />
               Camera is off. No video was recorded; only the snapshots taken during the exam are kept for review.
             </p>
@@ -113,7 +113,7 @@ export default function SubmittedPage() {
 
       {result && result.gradable > 0 ? (
         <section className="mt-8 max-w-2xl">
-          <h2 className="text-lg font-semibold">Question review</h2>
+          <h2 className="text-lg font-medium">Question review</h2>
           <ol className="mt-3 space-y-3">
             {result.items.map((item, i) => (
               <Card as="li" key={item.question.id} className="p-4">
@@ -123,7 +123,7 @@ export default function SubmittedPage() {
                   ) : item.correct === false ? (
                     <CircleX className="mt-0.5 size-5 shrink-0 text-[var(--risk-high-fg)]" aria-label="Incorrect" />
                   ) : (
-                    <Hourglass className="mt-0.5 size-5 shrink-0 text-[var(--muted)]" aria-label="Awaiting grading" />
+                    <Hourglass className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-label="Awaiting grading" />
                   )}
                   <div className="min-w-0 text-sm">
                     <p className="font-medium">
@@ -132,10 +132,10 @@ export default function SubmittedPage() {
                     {item.correct === null ? (
                       <Badge className="mt-2">Graded by faculty</Badge>
                     ) : (
-                      <div className="mt-2 space-y-1 text-[var(--muted)]">
+                      <div className="mt-2 space-y-1 text-muted-foreground">
                         <p>
                           Your answer:{" "}
-                          <span className="text-[var(--foreground)]">{item.given || "No answer"}</span>
+                          <span className="text-foreground">{item.given || "No answer"}</span>
                         </p>
                         {item.correct === false ? (
                           <p>

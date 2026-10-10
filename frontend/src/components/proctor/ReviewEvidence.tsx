@@ -92,8 +92,8 @@ export function PriorityPanel({
           }`}
         >
           <span>
-            <span className="block text-2xl font-bold tabular-nums">{priority.score}</span>
-            <span className="block text-[10px] font-semibold uppercase tracking-wider">{priority.level}</span>
+            <span className="block text-2xl font-medium tabular-nums">{priority.score}</span>
+            <span className="block text-[11px] font-medium">{sentence(priority.level)}</span>
           </span>
         </div>
         <div className="min-w-0 flex-1">
@@ -138,7 +138,7 @@ export function PriorityPanel({
           hint="Stills kept for review; no video is stored"
         />
       </dl>
-      <p className="text-xs text-[var(--muted)]">
+      <p className="text-xs text-muted-foreground">
         Priority ranks where to look first; it is not a verdict. Rule version {ruleVersion ?? "risk-v3.0"}.
       </p>
     </Card>
@@ -157,8 +157,8 @@ function TrustItem({
   hint: string;
 }) {
   return (
-    <div className="rounded-xl bg-[var(--nav-active-bg)] px-3 py-2" title={hint}>
-      <dt className="text-[var(--muted)]">{label}</dt>
+    <div className="rounded-xl bg-muted px-3 py-2" title={hint}>
+      <dt className="text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 flex items-center gap-1 font-medium">
         {good === true ? (
           <ShieldCheck className="size-3.5 text-[var(--risk-low-fg)]" aria-hidden />
@@ -180,7 +180,7 @@ export function CheckFirstList({
 }) {
   if (!incidents.length) {
     return (
-      <p className="surface rounded-2xl px-4 py-6 text-center text-sm text-[var(--muted)]">
+      <p className="surface rounded-2xl px-4 py-6 text-center text-sm text-muted-foreground">
         No incidents to review.
       </p>
     );
@@ -189,20 +189,18 @@ export function CheckFirstList({
     <ol className="space-y-3">
       {incidents.slice(0, 6).map((incident, index) => (
         <Card as="li" key={incident.id} className="flex flex-wrap gap-4 p-4 sm:flex-nowrap">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--nav-active-bg)] text-sm font-bold text-[var(--nav-active-fg)]">
-            {index + 1}
-          </span>
+          <span className="w-5 shrink-0 pt-0.5 text-sm tabular-nums text-muted-foreground">{index + 1}.</span>
           <div className="min-w-0 flex-1 text-sm">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="font-semibold">{incident.title}</p>
+              <p className="font-medium">{incident.title}</p>
               <Badge tone={incident.priority >= 6 ? "high" : incident.priority >= 3 ? "medium" : "low"}>
                 Priority {incident.priority}
               </Badge>
               <Badge>{sentence(incident.category)}</Badge>
               {!incident.scored ? <Badge>Log only</Badge> : null}
             </div>
-            <p className="mt-1 text-[var(--muted)]">{incident.reason}</p>
-            <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--muted)]">
+            <p className="mt-1 text-muted-foreground">{incident.reason}</p>
+            <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 <Clock className="size-3.5" aria-hidden />
                 {time(incident.startedAt)}
@@ -225,7 +223,7 @@ export function CheckFirstList({
                   key={id}
                   type="button"
                   onClick={() => onOpenSnapshot(id)}
-                  className="overflow-hidden rounded-xl border border-[var(--border)] hover:border-[var(--accent)]"
+                  className="overflow-hidden rounded-xl border border-border hover:border-[var(--border-strong)]"
                   aria-label={`Open snapshot for ${incident.title}`}
                 >
                   <SnapshotImage id={id} alt={incident.title} className="h-20 w-28" />
@@ -264,7 +262,7 @@ export function SnapshotFilmstrip({
             onClick={() => onOpen(snap.id)}
             className={`block overflow-hidden rounded-xl border-2 text-left ${
               activeId === snap.id
-                ? "border-[var(--accent)]"
+                ? "border-foreground"
                 : snap.kind === "incident"
                   ? "border-[var(--risk-high-fg)]/60"
                   : "border-transparent"
@@ -272,11 +270,11 @@ export function SnapshotFilmstrip({
           >
             <SnapshotImage id={snap.id} alt={`${KIND_LABEL[snap.kind]} snapshot`} className="h-24 w-32" />
             <span className="block px-2 py-1 text-[11px]">
-              <span className={snap.kind === "incident" ? "font-semibold text-[var(--risk-high-fg)]" : ""}>
+              <span className={snap.kind === "incident" ? "font-medium text-[var(--risk-high-fg)]" : ""}>
                 {KIND_LABEL[snap.kind]}
                 {snap.eventType ? ` · ${snap.eventType.replaceAll("_", " ")}` : ""}
               </span>
-              <span className="block text-[var(--muted)]">{time(snap.createdAt)}</span>
+              <span className="block text-muted-foreground">{time(snap.createdAt)}</span>
             </span>
           </button>
         </li>
@@ -318,10 +316,10 @@ export function SnapshotLightbox({
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden />
       <div className="surface-float rise relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl p-4">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold">
+          <p className="text-sm font-medium">
             {KIND_LABEL[current.kind]}
             {current.eventType ? ` · ${current.eventType.replaceAll("_", " ")}` : ""} · {time(current.createdAt)}
-            <span className="ml-2 font-normal text-[var(--muted)]">
+            <span className="ml-2 font-normal text-muted-foreground">
               {index + 1} / {snapshots.length}
             </span>
           </p>
@@ -330,7 +328,7 @@ export function SnapshotLightbox({
             onClick={onClose}
             autoFocus
             aria-label="Close viewer"
-            className="grid size-9 place-items-center rounded-xl hover:bg-[var(--nav-active-bg)]"
+            className="grid size-9 place-items-center rounded-xl hover:bg-muted"
           >
             <X className="size-5" aria-hidden />
           </button>
@@ -340,7 +338,7 @@ export function SnapshotLightbox({
           {reference && reference.id !== current.id ? (
             <div>
               <SnapshotImage id={reference.id} alt="Reference photo from the camera check" className="aspect-[4/3] w-full rounded-xl" />
-              <p className="mt-1 text-xs text-[var(--muted)]">Reference from the pre-exam camera check</p>
+              <p className="mt-1 text-xs text-muted-foreground">Reference from the pre-exam camera check</p>
             </div>
           ) : null}
         </div>
@@ -349,7 +347,7 @@ export function SnapshotLightbox({
             type="button"
             disabled={index <= 0}
             onClick={() => onNavigate(snapshots[index - 1].id)}
-            className="inline-flex min-h-10 items-center gap-1 rounded-xl px-3 text-sm hover:bg-[var(--nav-active-bg)] disabled:opacity-40"
+            className="inline-flex min-h-10 items-center gap-1 rounded-xl px-3 text-sm hover:bg-muted disabled:opacity-40"
           >
             <ChevronLeft className="size-4" aria-hidden /> Previous
           </button>
@@ -357,7 +355,7 @@ export function SnapshotLightbox({
             type="button"
             disabled={index >= snapshots.length - 1}
             onClick={() => onNavigate(snapshots[index + 1].id)}
-            className="inline-flex min-h-10 items-center gap-1 rounded-xl px-3 text-sm hover:bg-[var(--nav-active-bg)] disabled:opacity-40"
+            className="inline-flex min-h-10 items-center gap-1 rounded-xl px-3 text-sm hover:bg-muted disabled:opacity-40"
           >
             Next <ChevronRight className="size-4" aria-hidden />
           </button>

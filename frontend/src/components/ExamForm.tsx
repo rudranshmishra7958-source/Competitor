@@ -120,7 +120,7 @@ export function ExamForm({
   }
 
   const field =
-    "mt-1.5 w-full min-h-11 rounded-xl border border-[var(--border)] px-3.5 py-2 text-sm disabled:opacity-70";
+    "mt-1.5 w-full min-h-11 rounded-xl border border-border px-3.5 py-2 text-sm disabled:opacity-70";
 
   return (
     <form className="space-y-6 pb-24" onSubmit={onSubmit}>
@@ -131,7 +131,7 @@ export function ExamForm({
       ) : null}
 
       <Card as="section" className="space-y-4 sm:p-6">
-        <h2 className="text-lg font-semibold">Schedule</h2>
+        <h2 className="text-lg font-medium">Schedule</h2>
         <label className="block text-sm">
           Title
           <input className={field} value={title} disabled={locked} onChange={(e) => setTitle(e.target.value)} />
@@ -185,7 +185,7 @@ export function ExamForm({
 
       <Card as="section" className="space-y-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">Questions</h2>
+          <h2 className="text-lg font-medium">Questions</h2>
           {!locked ? (
             <div className="flex flex-wrap gap-2">
               <Button variant="secondary" size="sm" onClick={() => setQuestions((q) => [...q, newMcq()])}>
@@ -222,10 +222,10 @@ export function ExamForm({
           Randomize option order per student
         </label>
         {questions.length === 0 ? (
-          <p className="text-sm text-[var(--muted)]">No questions yet.</p>
+          <p className="text-sm text-muted-foreground">No questions yet.</p>
         ) : (
           questions.map((q, index) => (
-            <article key={q.id} className="rounded-2xl border border-[var(--border)] bg-[var(--nav-active-bg)]/30 p-4">
+            <article key={q.id} className="rounded-2xl border border-border bg-muted/30 p-4">
               <div className="mb-2 flex items-center justify-between text-sm">
                 <span className="flex items-center gap-2 font-medium">
                   {index + 1}.
@@ -369,7 +369,7 @@ export function ExamForm({
                   ) : null}
                 </div>
               ) : (
-                <p className="mt-2 text-xs text-[var(--muted)]">
+                <p className="mt-2 text-xs text-muted-foreground">
                   Photo submission in Phase 4. OCR text stays empty (`ocrText: null`).
                 </p>
               )}
@@ -379,14 +379,14 @@ export function ExamForm({
       </Card>
 
       <Card as="section" className="space-y-4 sm:p-6">
-        <h2 className="text-lg font-semibold">Security policy</h2>
-        <p className="text-sm text-[var(--muted)]">
+        <h2 className="text-lg font-medium">Security policy</h2>
+        <p className="text-sm text-muted-foreground">
           Signals are always captured later; this only decides whether they count.
         </p>
         <table className="w-full text-left text-sm">
           <tbody>
             {POLICIES.map((row) => (
-              <tr key={row.key} className="border-t border-[var(--border)]">
+              <tr key={row.key} className="border-t border-border">
                 <th scope="row" className="py-3 pr-3 font-medium">{row.label}</th>
                 <td className="py-3 text-right">
                   <PolicySelect
@@ -403,15 +403,6 @@ export function ExamForm({
           <input
             type="checkbox"
             disabled={locked}
-            checked={policy.cameraOptional}
-            onChange={(e) => setPolicy({ ...policy, cameraOptional: e.target.checked })}
-          />
-          Camera optional (product default)
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            disabled={locked}
             checked={policy.requireEndpointAgent}
             onChange={(e) => setPolicy({ ...policy, requireEndpointAgent: e.target.checked })}
           />
@@ -422,11 +413,11 @@ export function ExamForm({
       <Card as="section" className="space-y-4 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <Video className="size-5 text-[var(--nav-active-fg)]" aria-hidden />
+            <h2 className="flex items-center gap-2 text-lg font-medium">
+              <Video className="size-5 text-foreground" aria-hidden />
               Webcam proctoring
             </h2>
-            <p className="mt-1 max-w-xl text-sm text-[var(--muted)]">
+            <p className="mt-1 max-w-xl text-sm text-muted-foreground">
               Special permission for this exam only. Students consent, frame face to desk, and keep the
               camera on. Analysis runs on their device; only still snapshots are kept, never video.
             </p>
@@ -512,7 +503,7 @@ export function ExamForm({
                     ["cameraDevice", "Phone or device in view"],
                   ] as const
                 ).map(([key, label]) => (
-                  <tr key={key} className="border-t border-[var(--border)]">
+                  <tr key={key} className="border-t border-border">
                     <th scope="row" className="py-3 pr-3 font-medium">{label}</th>
                     <td className="py-3 text-right">
                       <PolicySelect

@@ -19,7 +19,7 @@ const sizes: Record<Size, string> = {
 };
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-full font-medium select-none whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-full font-medium select-none disabled:cursor-not-allowed disabled:opacity-50";
 
 type Common = { variant?: Variant; size?: Size; className?: string; children: React.ReactNode };
 

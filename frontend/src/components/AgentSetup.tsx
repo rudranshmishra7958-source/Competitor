@@ -42,7 +42,7 @@ export function AgentSetup({
     <div className="surface rounded-2xl p-4 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <PlugZap className="size-5 text-[var(--nav-active-fg)]" aria-hidden />
+          <PlugZap className="size-5 text-foreground" aria-hidden />
           <span className="font-medium">Endpoint agent</span>
           <Badge tone={connected ? "low" : required ? "medium" : "neutral"}>
             {connected ? "Connected" : required ? "Required" : "Optional"}
@@ -58,7 +58,7 @@ export function AgentSetup({
         </Button>
       </div>
       {open ? (
-        <div className="mt-3 max-w-xl text-[var(--muted)]">
+        <div className="mt-3 max-w-xl text-muted-foreground">
           <p>
             {required ? "This exam requires the agent before you can answer." : "Optional. Connecting raises assurance."}{" "}
             {connected ? "The agent is connected." : "The agent is not connected yet."}
@@ -71,7 +71,7 @@ export function AgentSetup({
             Copy PowerShell launch command
           </Button>
           {message ? (
-            <p className="mt-2 text-[var(--nav-active-fg)]" role="status">
+            <p className="mt-2 text-foreground" role="status">
               {message}
             </p>
           ) : null}

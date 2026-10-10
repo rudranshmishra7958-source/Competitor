@@ -19,7 +19,7 @@ export default function EditExamPage() {
   }, [params.id]);
 
   if (!exam) {
-    return <p className="text-sm text-[var(--muted)]">Exam not found in this browser store.</p>;
+    return <p className="text-sm text-muted-foreground">Exam not found in this browser store.</p>;
   }
 
   const editable = canEditExam(exam);

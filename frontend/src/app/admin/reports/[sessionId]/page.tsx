@@ -59,7 +59,7 @@ export default function IntegrityReportPage() {
         description={`${examTitle}. Evidence for a human reviewer—not an automatic accusation.`}
       />
       <div className="mb-4">
-        <ButtonLink href={`/admin/live/${encodeURIComponent(report.sessionId)}`} variant="secondary" size="sm">
+        <ButtonLink href={`/admin/live/${encodeURIComponent(report.sessionId)}`} variant="secondary" size="sm" className="whitespace-normal text-left">
           Open live timeline and set Flagged or Cleared
           <ArrowRight className="size-4" aria-hidden />
         </ButtonLink>
@@ -70,8 +70,8 @@ export default function IntegrityReportPage() {
       ) : null}
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold">Check these first</h2>
-        <p className="mt-1 text-sm text-[var(--muted)]">
+        <h2 className="text-lg font-medium">Check these first</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           Incidents ranked by priority: weight × detection confidence × corroboration × duration.
         </p>
         <div className="mt-3">
@@ -81,8 +81,8 @@ export default function IntegrityReportPage() {
 
       {report.snapshots?.length ? (
         <section className="mt-8">
-          <h2 className="text-lg font-semibold">Snapshot timeline</h2>
-          <p className="mt-1 text-sm text-[var(--muted)]">
+          <h2 className="text-lg font-medium">Snapshot timeline</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             Routine and incident stills in exam order. Incident frames are outlined in red. No video is stored.
           </p>
           <div className="mt-3">
@@ -102,7 +102,7 @@ export default function IntegrityReportPage() {
         <div className="flex flex-wrap items-center gap-3">
           <RiskChip level={report.risk} />
           <Badge tone="accent">{reviewLabel(report.reviewStatus)}</Badge>
-          <span className="text-sm text-[var(--muted)]">{assuranceLabel(report.assurance)}</span>
+          <span className="text-sm text-muted-foreground">{assuranceLabel(report.assurance)}</span>
         </div>
         <p className="mt-4 text-base leading-relaxed">{report.summary}</p>
       </Card>
@@ -125,28 +125,28 @@ export default function IntegrityReportPage() {
           Export CSV
         </Button>
         {message ? (
-          <span className="text-sm text-[var(--muted)]" role="status">
+          <span className="text-sm text-muted-foreground" role="status">
             {message}
           </span>
         ) : null}
       </div>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold">All activity (browser + agent)</h2>
-        <p className="mt-1 text-sm text-[var(--muted)]">
+        <h2 className="text-lg font-medium">All activity (browser + agent)</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           {report.events.length} event{report.events.length === 1 ? "" : "s"} from the browser and the endpoint agent.
         </p>
         <EventTimelineList events={report.events} variant="all" />
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold">Unsafe — policy violations</h2>
-        <p className="mt-1 text-sm text-[var(--muted)]">
+        <h2 className="text-lg font-medium">Unsafe — policy violations</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           Actions the exam policy set to enforce. These add to the integrity score.
         </p>
         <EventTimelineList events={unsafe} variant="unsafe" />
-        <h3 className="mt-6 text-base font-semibold">Score adjustments</h3>
-        <p className="mt-1 text-sm text-[var(--muted)]">
+        <h3 className="mt-6 text-base font-medium">Score adjustments</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
           Rules that combined browser and agent signals, or other score additions.
         </p>
         {report.correlations.length ? (
@@ -157,14 +157,14 @@ export default function IntegrityReportPage() {
                 className="surface rounded-2xl px-4 py-3"
               >
                 <p className="font-medium">{hit.label}</p>
-                <p className="mt-1 text-xs text-[var(--muted)]">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Rule {hit.rule} · +{hit.weight} · {hit.eventIds.length} linked event(s)
                 </p>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mt-3 text-sm text-[var(--muted)]">No extra score adjustments on this session.</p>
+          <p className="mt-3 text-sm text-muted-foreground">No extra score adjustments on this session.</p>
         )}
       </section>
     </>
@@ -174,8 +174,8 @@ export default function IntegrityReportPage() {
 function Metric({ label, value, wide }: { label: string; value: number | string; wide?: boolean }) {
   return (
     <Card className={`p-4 ${wide ? "sm:col-span-2 lg:col-span-1" : ""}`}>
-      <p className="text-xs text-[var(--muted)]">{label}</p>
-      <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 text-xl font-medium tabular-nums">{value}</p>
     </Card>
   );
 }

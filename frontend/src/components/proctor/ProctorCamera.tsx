@@ -238,7 +238,7 @@ export function ProctorCamera({
           type="button"
           onClick={() => setMinimized((v) => !v)}
           aria-label={minimized ? "Enlarge camera preview" : "Shrink camera preview"}
-          className="grid size-6 place-items-center rounded-md hover:bg-[var(--nav-active-bg)]"
+          className="grid size-6 place-items-center rounded-md hover:bg-muted"
         >
           {minimized ? <Maximize2 className="size-3.5" aria-hidden /> : <Minimize2 className="size-3.5" aria-hidden />}
         </button>

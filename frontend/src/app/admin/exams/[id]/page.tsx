@@ -23,7 +23,7 @@ export default function InspectExamPage() {
   }, [params.id]);
 
   if (!exam) {
-    return <p className="surface rounded-2xl p-6 text-sm text-[var(--muted)]">Exam not found in this browser store.</p>;
+    return <p className="surface rounded-2xl p-6 text-sm text-muted-foreground">Exam not found in this browser store.</p>;
   }
 
   return (
@@ -32,17 +32,17 @@ export default function InspectExamPage() {
       <ExamForm initial={exam} initialQuestions={questions} readOnly />
       {scans.length ? (
         <section className="mt-8">
-          <h2 className="text-lg font-semibold">Written scans (append-only)</h2>
+          <h2 className="text-lg font-medium">Written scans (append-only)</h2>
           <ul className="mt-3 space-y-3">
             {scans.map((s) => {
               const who = studentRoster().find((r) => r.userId === s.studentId);
               return (
                 <li key={s.id} className="text-sm">
-                  <p className="text-[var(--muted)]">
+                  <p className="text-muted-foreground">
                     {who?.displayName ?? s.studentId} · {new Date(s.createdAt).toLocaleString()}
                   </p>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={s.imageUrl} alt="Student written scan" className="mt-1 max-h-40 rounded-xl border border-[var(--border)]" />
+                  <img src={s.imageUrl} alt="Student written scan" className="mt-1 max-h-40 rounded-xl border border-border" />
                 </li>
               );
             })}

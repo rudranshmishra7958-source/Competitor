@@ -85,29 +85,29 @@ export function FramingCheck({ onReady }: { onReady: (reference: Blob | null) =>
 
   return (
     <div className="grid gap-4 sm:grid-cols-[minmax(0,18rem)_1fr] sm:items-start">
-      <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-black">
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-black">
         <video ref={videoRef} muted playsInline className="aspect-[4/3] w-full -scale-x-100 object-cover" />
         {/* Framing guide: head near the top, desk across the bottom band */}
         <div className="pointer-events-none absolute inset-0" aria-hidden>
           <div className="absolute left-1/2 top-[10%] h-[38%] w-[34%] -translate-x-1/2 rounded-[50%] border-2 border-dashed border-white/60" />
           <div className="absolute inset-x-[6%] bottom-[4%] h-[18%] rounded-lg border-2 border-dashed border-white/40" />
-          <span className="absolute bottom-[8%] left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-white/70">
+          <span className="absolute bottom-[8%] left-1/2 -translate-x-1/2 text-[11px] text-white/70">
             desk surface
           </span>
         </div>
       </div>
       <div className="text-sm">
-        <p className="flex items-center gap-2 font-semibold">
+        <p className="flex items-center gap-2 font-medium">
           {state === "ready" ? (
             <CheckCircle2 className="size-5 text-[var(--risk-low-fg)]" aria-hidden />
           ) : state === "checking" || state === "starting" ? (
-            <Loader2 className="size-5 animate-spin text-[var(--nav-active-fg)]" aria-hidden />
+            <Loader2 className="size-5 animate-spin text-foreground" aria-hidden />
           ) : (
             <ScanFace className="size-5 text-[var(--risk-high-fg)]" aria-hidden />
           )}
           Camera framing
         </p>
-        <p className="mt-1 text-[var(--muted)]" role="status" aria-live="polite">
+        <p className="mt-1 text-muted-foreground" role="status" aria-live="polite">
           {hint}
         </p>
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--border)]" aria-hidden>
@@ -116,7 +116,7 @@ export function FramingCheck({ onReady }: { onReady: (reference: Blob | null) =>
             style={{ width: `${Math.round((state === "ready" ? 1 : progress) * 100)}%` }}
           />
         </div>
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-[var(--muted)]">
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
           <li>Your face fits inside the oval, with both shoulders visible.</li>
           <li>Tilt the camera down until the desk in front of you shows in the lower band.</li>
           <li>Good, even lighting; no one else in view.</li>

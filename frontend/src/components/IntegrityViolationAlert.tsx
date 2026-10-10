@@ -30,14 +30,14 @@ export function IntegrityViolationAlert({
       <div
         role="alertdialog"
         aria-label={camera ? "You are being monitored" : "Integrity warning"}
-        className="surface-float rise w-full max-w-md rounded-2xl !border-[var(--risk-high-fg)] p-5"
+        className="rise w-full max-w-md rounded-2xl border border-[var(--risk-high-fg)]/50 bg-card p-5 shadow-[var(--shadow-float)]"
       >
-        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--risk-high-fg)]">
+        <p className="flex items-center gap-2 text-sm font-medium text-[var(--risk-high-fg)]">
           {camera ? <Video className="size-4" aria-hidden /> : <OctagonAlert className="size-4" aria-hidden />}
           {camera ? "You are being monitored on camera" : "Integrity warning"}
         </p>
         <p className="mt-2 text-lg font-medium leading-snug">{notice.message}</p>
-        {scoreLine ? <p className="mt-3 text-sm text-[var(--muted)]">{scoreLine}</p> : null}
+        {scoreLine ? <p className="mt-3 text-sm text-muted-foreground">{scoreLine}</p> : null}
         <button
           type="button"
           onClick={onDismiss}

@@ -64,11 +64,11 @@ export function ExamList() {
               const editable = canEditExam(exam);
               const href = editable ? `/admin/exams/${exam.id}/edit` : `/admin/exams/${exam.id}`;
               return (
-                <tr key={exam.id} className="hover:bg-[var(--nav-active-bg)]">
+                <tr key={exam.id} className="hover:bg-muted">
                   <td className={`${td} font-medium`}>{exam.title}</td>
                   <td className={td}>
                     {examFormatLabel(exam)}
-                    <span className="block text-xs text-[var(--muted)]">
+                    <span className="block text-xs text-muted-foreground">
                       {exam.policy.requireEndpointAgent ? "Agent required" : "Browser only"}
                     </span>
                   </td>

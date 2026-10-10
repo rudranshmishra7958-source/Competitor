@@ -45,7 +45,7 @@ export default function ReportsPage() {
         </EmptyState>
       ) : (
         <>
-          <div className="mb-6 grid gap-3 sm:grid-cols-3">
+          <div className="mb-6 grid grid-cols-3 gap-3">
             <StatCard label="Low risk" value={counts.low} tone="low" icon={<CircleCheck className="size-5" aria-hidden />} />
             <StatCard label="Medium risk" value={counts.medium} tone="medium" icon={<TriangleAlert className="size-5" aria-hidden />} />
             <StatCard label="High risk" value={counts.high} tone="high" icon={<OctagonAlert className="size-5" aria-hidden />} />
@@ -64,11 +64,11 @@ export default function ReportsPage() {
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-lg font-semibold text-[var(--foreground)]">
+                      <p className="text-lg font-medium text-foreground">
                         {report.displayName}
                       </p>
-                      <p className="mt-1 text-sm text-[var(--muted)]">{examTitle}</p>
-                      <p className="mt-1 text-xs text-[var(--muted)]">
+                      <p className="mt-1 text-sm text-muted-foreground">{examTitle}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
                         {assuranceLabel(report.assurance)} · Updated{" "}
                         {new Date(report.updatedAt).toLocaleString()}
                       </p>
@@ -86,7 +86,7 @@ export default function ReportsPage() {
                       ))}
                     </ul>
                   ) : null}
-                  <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                     {report.summary}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">

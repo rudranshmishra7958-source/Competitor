@@ -45,14 +45,14 @@ export function StatCard({
   tone?: "low" | "medium" | "high";
 }) {
   return (
-    <Card className="flex flex-col gap-3">
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+    <Card className="flex flex-col gap-2 p-4 sm:gap-3 sm:p-5">
+      <p className="flex items-center gap-2 text-xs text-muted-foreground sm:text-sm">
         {tone ? <span className={cn("size-1.5 rounded-full", toneDot[tone])} aria-hidden /> : null}
         {!tone && icon ? <span className="text-muted-foreground [&_svg]:size-4">{icon}</span> : null}
         {label}
       </p>
-      <p className="text-4xl font-medium tracking-tight tabular-nums">{value}</p>
-      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+      <p className="text-3xl font-medium tracking-tight tabular-nums sm:text-4xl">{value}</p>
+      {hint ? <p className="hidden text-xs text-muted-foreground sm:block">{hint}</p> : null}
     </Card>
   );
 }

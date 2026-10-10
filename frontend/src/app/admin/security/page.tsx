@@ -33,11 +33,11 @@ export default function SecurityPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap justify-between gap-2">
                   <span className="font-medium">{sentence(alert.event.replaceAll("_", " "))}</span>
-                  <time className="text-xs text-[var(--muted)]">
+                  <time className="text-xs text-muted-foreground">
                     {new Date(alert.createdAt).toLocaleString()}
                   </time>
                 </div>
-                <p className="mt-1 text-xs text-[var(--muted)]">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Account {alert.identifierHint}
                   {alert.ipAddress ? ` · ${alert.ipAddress}` : ""}
                 </p>

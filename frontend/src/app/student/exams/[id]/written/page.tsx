@@ -64,7 +64,7 @@ export default function WrittenExamPage() {
   }
 
   if (questions.length === 0) {
-    return <p className="surface rounded-2xl p-6 text-sm text-[var(--muted)]">This exam has no written prompts.</p>;
+    return <p className="surface rounded-2xl p-6 text-sm text-muted-foreground">This exam has no written prompts.</p>;
   }
 
   const remaining = Date.parse(attempt.expiresAt) - Date.now();
@@ -72,7 +72,7 @@ export default function WrittenExamPage() {
   const cameraLocked = Boolean(exam.policy.webcam?.required) && open && cameraStatus !== "live";
 
   return (
-    <div className="exam-room rise rounded-3xl p-4 sm:p-6">
+    <div className="exam-room rise rounded-2xl p-4 sm:p-8">
       {integrity.notice ? (
         <IntegrityViolationAlert notice={integrity.notice} onDismiss={integrity.dismiss} />
       ) : null}
@@ -98,8 +98,8 @@ export default function WrittenExamPage() {
           <Badge tone="low" icon={<Radio className="size-3.5" aria-hidden />}>
             Monitor on
           </Badge>
-          <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">{exam.title}</h1>
-          <p className="mt-1 text-sm text-[var(--muted)]">
+          <h1 className="mt-2 text-2xl font-medium sm:text-3xl">{exam.title}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Written answers · Integrity score {integrity.score} (for review)
           </p>
         </div>
@@ -123,7 +123,7 @@ export default function WrittenExamPage() {
             : "This exam requires your webcam. Allow the camera in the address bar to continue; answers are locked until then."}
         </p>
       ) : null}
-      <p className="mb-4 mt-4 text-sm text-[var(--muted)]">
+      <p className="mb-4 mt-4 text-sm text-muted-foreground">
         Each photo is stored as a new submission. Admins see the full history, not a replacement.
       </p>
       <div className="space-y-5">

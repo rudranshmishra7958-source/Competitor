@@ -36,7 +36,7 @@ export default function AdminDashboardPage() {
         title="Dashboard"
         description="Server-backed integrity overview. Open Live Monitoring to review evidence."
       />
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {levels.map((level) => (
           <StatCard
             key={level}
@@ -62,9 +62,9 @@ export default function AdminDashboardPage() {
               <Icon className="size-5 shrink-0 text-muted-foreground" aria-hidden />
               <span className="min-w-0 flex-1">
                 <span className="block font-medium">{label}</span>
-                <span className="block text-xs font-normal text-[var(--muted)]">{hint}</span>
+                <span className="block text-xs font-normal text-muted-foreground">{hint}</span>
               </span>
-              <ArrowRight className="size-4 text-[var(--muted)]" aria-hidden />
+              <ArrowRight className="size-4 text-muted-foreground" aria-hidden />
             </ButtonLink>
           </Card>
         ))}

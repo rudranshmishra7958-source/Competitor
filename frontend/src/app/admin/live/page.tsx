@@ -172,8 +172,8 @@ export default function LiveMonitoringPage() {
       onClick={() => setRiskFilter(value)}
       className={`min-h-9 rounded-full border px-3 text-xs font-medium ${
         riskFilter === value
-          ? "border-[var(--accent)] bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]"
-          : "border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)]"
+          ? "border-foreground bg-muted text-foreground"
+          : "border-border text-muted-foreground hover:text-foreground"
       }`}
     >
       {label}
@@ -192,7 +192,7 @@ export default function LiveMonitoringPage() {
               aria-pressed={view === "grid"}
               onClick={() => changeView("grid")}
               className={`inline-flex min-h-9 items-center gap-1.5 rounded-[10px] px-3 text-sm ${
-                view === "grid" ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]" : "text-[var(--muted)]"
+                view === "grid" ? "bg-muted text-foreground" : "text-muted-foreground"
               }`}
             >
               <LayoutGrid className="size-4" aria-hidden />
@@ -203,7 +203,7 @@ export default function LiveMonitoringPage() {
               aria-pressed={view === "table"}
               onClick={() => changeView("table")}
               className={`inline-flex min-h-9 items-center gap-1.5 rounded-[10px] px-3 text-sm ${
-                view === "table" ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]" : "text-[var(--muted)]"
+                view === "table" ? "bg-muted text-foreground" : "text-muted-foreground"
               }`}
             >
               <Rows3 className="size-4" aria-hidden />
@@ -221,10 +221,10 @@ export default function LiveMonitoringPage() {
           >
             <OctagonAlert className="mt-0.5 size-5 shrink-0 text-[var(--risk-high-fg)]" aria-hidden />
             <div className="min-w-0 flex-1">
-              <p className="font-semibold">{alert.name} reached High risk</p>
+              <p className="font-medium">{alert.name} reached High risk</p>
               <Link
                 href={`/admin/live/${encodeURIComponent(alert.sessionId)}`}
-                className="text-[var(--nav-active-fg)] underline-offset-2 hover:underline"
+                className="text-foreground underline-offset-2 hover:underline"
               >
                 Review timeline
               </Link>
@@ -233,7 +233,7 @@ export default function LiveMonitoringPage() {
               type="button"
               aria-label="Dismiss alert"
               onClick={() => setAlerts((current) => current.filter((a) => a.sessionId !== alert.sessionId))}
-              className="grid size-7 place-items-center rounded-lg hover:bg-[var(--nav-active-bg)]"
+              className="grid size-7 place-items-center rounded-lg hover:bg-muted"
             >
               <X className="size-4" aria-hidden />
             </button>
@@ -241,7 +241,7 @@ export default function LiveMonitoringPage() {
         ))}
       </div>
 
-      <p className="mb-4 flex items-start gap-2 text-sm text-[var(--muted)]" role="note">
+      <p className="mb-4 flex items-start gap-2 text-sm text-muted-foreground" role="note">
         <Radio
           className={`mt-0.5 size-4 shrink-0 ${fromApi ? "text-[var(--risk-low-fg)]" : ""}`}
           aria-hidden
@@ -249,7 +249,7 @@ export default function LiveMonitoringPage() {
         <span>
           {fromApi ? (
             <>
-              <span className="font-medium text-[var(--foreground)]">
+              <span className="font-medium text-foreground">
                 {socketLive ? "Live updates on" : "Polling every 2 s"}
               </span>
               {" · "}
@@ -265,7 +265,7 @@ export default function LiveMonitoringPage() {
       {fromApi ? (
         <Card className="mb-5 flex flex-wrap items-end gap-3 p-4">
           <div className="flex items-center gap-2 text-sm font-medium">
-            <FlaskConical className="size-4 text-[var(--nav-active-fg)]" aria-hidden />
+            <FlaskConical className="size-4 text-foreground" aria-hidden />
             Demo tools
           </div>
           <label className="text-sm">
@@ -273,7 +273,7 @@ export default function LiveMonitoringPage() {
             <select
               value={scenario}
               onChange={(e) => setScenario(e.target.value as SimulationScenario)}
-              className="min-h-10 rounded-xl border border-[var(--border)] px-3"
+              className="min-h-10 rounded-xl border border-border px-3"
             >
               {SCENARIOS.map((s) => (
                 <option key={s.value} value={s.value}>
@@ -290,7 +290,7 @@ export default function LiveMonitoringPage() {
             Clear simulated
           </Button>
           {demoMessage ? (
-            <span className="text-sm text-[var(--muted)]" role="status">
+            <span className="text-sm text-muted-foreground" role="status">
               {demoMessage}
             </span>
           ) : null}
@@ -303,7 +303,7 @@ export default function LiveMonitoringPage() {
           <select
             value={examFilter}
             onChange={(event) => setExamFilter(event.target.value)}
-            className="min-h-10 rounded-xl border border-[var(--border)] px-3"
+            className="min-h-10 rounded-xl border border-border px-3"
           >
             <option value="all">All active exams</option>
             {exams.map((examId) => (
@@ -322,7 +322,7 @@ export default function LiveMonitoringPage() {
       </div>
 
       {!visibleRows.length ? (
-        <p className="surface rounded-2xl px-4 py-10 text-center text-sm text-[var(--muted)]">
+        <p className="surface rounded-2xl px-4 py-10 text-center text-sm text-muted-foreground">
           {rows.length
             ? "No sessions match these filters."
             : "No live sessions yet. A student must start an exam while the API is running, or use Simulate student."}
@@ -338,8 +338,8 @@ export default function LiveMonitoringPage() {
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate font-semibold">{row.displayName}</p>
-                  <p className="truncate text-xs text-[var(--muted)]">
+                  <p className="truncate font-medium">{row.displayName}</p>
+                  <p className="truncate text-xs text-muted-foreground">
                     {getExam(row.examId)?.title ?? row.examId}
                   </p>
                 </div>
@@ -356,7 +356,7 @@ export default function LiveMonitoringPage() {
                 <div className="space-y-1">
                   <PriorityBadge priority={row.priority} />
                   {row.priority.reasons[0] ? (
-                    <p className="text-xs text-[var(--muted)]">{row.priority.reasons[0]}</p>
+                    <p className="text-xs text-muted-foreground">{row.priority.reasons[0]}</p>
                   ) : null}
                 </div>
               ) : null}
@@ -368,14 +368,14 @@ export default function LiveMonitoringPage() {
                     ["Total", row.breakdown.total],
                   ] as const
                 ).map(([label, value]) => (
-                  <div key={label} className="rounded-xl bg-[var(--nav-active-bg)] px-2 py-1.5">
-                    <dt className="text-[var(--muted)]">{label}</dt>
-                    <dd className="text-base font-semibold tabular-nums">{value}</dd>
+                  <div key={label} className="rounded-xl bg-muted px-2 py-1.5">
+                    <dt className="text-muted-foreground">{label}</dt>
+                    <dd className="text-base font-medium tabular-nums">{value}</dd>
                   </div>
                 ))}
               </dl>
               <p className="min-h-10 text-sm">
-                <span className="text-[var(--muted)]">Last: </span>
+                <span className="text-muted-foreground">Last: </span>
                 {lastEvent(row)}
               </p>
               <div className="mt-auto flex items-center justify-between gap-2">
@@ -420,7 +420,7 @@ export default function LiveMonitoringPage() {
             {visibleRows.map((row) => (
               <tr
                 key={row.sessionId}
-                className={row.risk === "high" ? "bg-[var(--risk-high-bg)]" : "hover:bg-[var(--nav-active-bg)]"}
+                className={row.risk === "high" ? "bg-[var(--risk-high-bg)]" : "hover:bg-muted"}
               >
                 <td className={`${td} font-medium`}>{row.displayName}</td>
                 <td className={td}>{getExam(row.examId)?.title ?? row.examId}</td>

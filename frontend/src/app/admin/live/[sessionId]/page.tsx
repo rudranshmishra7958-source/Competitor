@@ -68,11 +68,11 @@ export default function SessionTimelinePage() {
           <PriorityPanel priority={session.priority} />
           <ButtonLink href={`/admin/reports/${encodeURIComponent(session.sessionId)}`} variant="secondary" size="sm">
             <FileSearch className="size-4" aria-hidden />
-            Open evidence report (ranked incidents and snapshots)
+            Open evidence report
           </ButtonLink>
         </div>
       ) : null}
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Summary label="Risk">
           <RiskChip level={session.risk} />
         </Summary>
@@ -82,15 +82,15 @@ export default function SessionTimelinePage() {
       </div>
 
       <Card as="section" className="mt-6">
-        <h2 className="font-semibold">Reviewer decision</h2>
+        <h2 className="font-medium">Reviewer decision</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {(["unreviewed", "flagged", "cleared"] as ReviewerStatus[]).map((value) => (
             <label
               key={value}
               className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm ${
                 status === value
-                  ? "border-[var(--accent)] bg-[var(--nav-active-bg)] font-medium"
-                  : "border-[var(--border)]"
+                  ? "border-foreground bg-muted font-medium"
+                  : "border-border"
               }`}
             >
               <input
@@ -110,26 +110,26 @@ export default function SessionTimelinePage() {
             onChange={(event) => setNote(event.target.value)}
             rows={3}
             maxLength={1000}
-            className="mt-1.5 w-full rounded-xl border border-[var(--border)] px-3 py-2"
+            className="mt-1.5 w-full rounded-xl border border-border px-3 py-2"
           />
         </label>
         <Button onClick={saveReview} className="mt-3">
           Save review
         </Button>
-        {message ? <p className="mt-2 text-sm text-[var(--muted)]">{message}</p> : null}
+        {message ? <p className="mt-2 text-sm text-muted-foreground">{message}</p> : null}
       </Card>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold">All activity (browser + agent)</h2>
-        <p className="mt-1 text-sm text-[var(--muted)]">
+        <h2 className="text-lg font-medium">All activity (browser + agent)</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           {events.length} event{events.length === 1 ? "" : "s"} from the browser and the endpoint agent.
         </p>
         <EventTimelineList events={events} variant="all" />
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold">Unsafe — policy violations</h2>
-        <p className="mt-1 text-sm text-[var(--muted)]">
+        <h2 className="text-lg font-medium">Unsafe — policy violations</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           Actions the exam policy set to enforce. These add to the integrity score.
         </p>
         <EventTimelineList events={events.filter((event) => event.scored)} variant="unsafe" />
@@ -147,8 +147,8 @@ function Summary({
 }) {
   return (
     <Card>
-      <p className="text-xs text-[var(--muted)]">{label}</p>
-      <div className="mt-2 text-xl font-semibold tabular-nums">{children}</div>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <div className="mt-2 text-xl font-medium tabular-nums">{children}</div>
     </Card>
   );
 }

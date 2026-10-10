@@ -158,7 +158,7 @@ export default function TakeExamPage() {
   const lowTime = remainingMs > 0 && remainingMs < 5 * 60 * 1000;
 
   return (
-    <div className="exam-room rise rounded-3xl p-4 sm:p-6">
+    <div className="exam-room rise rounded-2xl p-4 sm:p-8">
       {integrity.notice ? (
         <IntegrityViolationAlert notice={integrity.notice} onDismiss={integrity.dismiss} />
       ) : null}
@@ -183,14 +183,14 @@ export default function TakeExamPage() {
         />
       ) : null}
 
-      <div className="surface-float z-20 sm:sticky sm:top-20 rounded-2xl p-4">
+      <div className="z-20 border-b border-border bg-background pb-5 sm:sticky sm:top-16">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="min-w-0">
             <Badge tone="low" icon={<Radio className="size-3.5" aria-hidden />}>
               Monitor on
             </Badge>
-            <h1 className="mt-2 truncate text-xl font-semibold sm:text-2xl">{exam.title}</h1>
-            <p className="mt-1 text-xs text-[var(--muted)] sm:text-sm">
+            <h1 className="mt-2 truncate text-xl font-medium sm:text-2xl">{exam.title}</h1>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
               {eventCount} browser {eventCount === 1 ? "event" : "events"} · Integrity score{" "}
               {integrity.score} (for review) ·{" "}
               {agentConnected
@@ -204,7 +204,7 @@ export default function TakeExamPage() {
             className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 font-mono text-2xl tabular-nums ${
               lowTime
                 ? "border-[var(--risk-high-fg)] text-[var(--risk-high-fg)]"
-                : "border-[var(--nav-active-fg)] text-[var(--nav-active-fg)]"
+                : "border-[var(--nav-active-fg)] text-foreground"
             }`}
             aria-live="polite"
           >
@@ -213,7 +213,7 @@ export default function TakeExamPage() {
           </p>
         </div>
         <div className="mt-4">
-          <div className="mb-1 flex justify-between text-xs text-[var(--muted)]">
+          <div className="mb-1 flex justify-between text-xs text-muted-foreground">
             <span>
               {answered} of {questions.length} answered
             </span>
@@ -241,7 +241,7 @@ export default function TakeExamPage() {
                 className={`grid size-8 place-items-center rounded-lg text-xs font-medium ${
                   selected[q.id]?.trim()
                     ? "bg-primary text-primary-foreground"
-                    : "border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)]"
+                    : "border border-border text-muted-foreground hover:border-[var(--border-strong)]"
                 }`}
               >
                 {i + 1}
@@ -263,7 +263,7 @@ export default function TakeExamPage() {
         </div>
       ) : null}
       {writtenNote ? (
-        <p className="mt-4 text-sm text-[var(--muted)]">Written prompts come after these questions.</p>
+        <p className="mt-4 text-sm text-muted-foreground">Written prompts come after these questions.</p>
       ) : null}
 
       {exam.policy.webcam?.required && cameraStatus !== "live" ? (
@@ -280,12 +280,12 @@ export default function TakeExamPage() {
         {questions.map((q, i) => (
           <Card as="li" key={q.id} id={`q-${q.id}`} className="scroll-mt-48 sm:p-6">
             <p className="text-lg font-medium leading-snug">
-              <span className="mr-2 text-[var(--nav-active-fg)]">{i + 1}.</span>
+              <span className="mr-2 text-foreground">{i + 1}.</span>
               {q.prompt}
             </p>
             {q.kind === "short" ? (
               <label className="mt-4 block text-sm">
-                <span className="text-[var(--muted)]">
+                <span className="text-muted-foreground">
                   {q.numeric ? "Type a number" : "Type a short answer"}
                 </span>
                 <input
@@ -296,7 +296,7 @@ export default function TakeExamPage() {
                   value={selected[q.id] ?? ""}
                   onChange={(e) => typeAnswer(q.id, e.target.value)}
                   disabled={!canAnswer}
-                  className="mt-1.5 min-h-12 w-full rounded-xl border border-[var(--border)] px-4 text-base"
+                  className="mt-1.5 min-h-12 w-full rounded-xl border border-border px-4 text-base"
                 />
               </label>
             ) : (
@@ -308,8 +308,8 @@ export default function TakeExamPage() {
                     <label
                       className={`flex min-h-12 cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-base transition-colors focus-within:ring-2 focus-within:ring-[var(--ring)] ${
                         on
-                          ? "border-[var(--accent)] bg-[var(--nav-active-bg)]"
-                          : "border-[var(--border)] hover:border-[var(--accent)]"
+                          ? "border-foreground bg-muted"
+                          : "border-border hover:border-[var(--border-strong)]"
                       } ${canAnswer ? "" : "cursor-not-allowed opacity-60"}`}
                     >
                       <input
@@ -322,7 +322,7 @@ export default function TakeExamPage() {
                       />
                       <span className="flex-1">{opt.text}</span>
                       {on ? (
-                        <CheckCircle2 className="size-5 shrink-0 text-[var(--nav-active-fg)]" aria-hidden />
+                        <CheckCircle2 className="size-5 shrink-0 text-foreground" aria-hidden />
                       ) : null}
                     </label>
                   </li>
@@ -341,7 +341,7 @@ export default function TakeExamPage() {
       </div>
 
       <Modal open={confirming} onClose={() => setConfirming(false)} title="Submit this attempt?">
-        <p className="text-sm text-[var(--muted)]">
+        <p className="text-sm text-muted-foreground">
           You cannot change answers after this. {answered} of {questions.length} questions answered.
         </p>
         <div className="mt-5 flex justify-end gap-2">

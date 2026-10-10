@@ -156,7 +156,7 @@ export function WrittenCapture({
   }
 
   const pickCls =
-    "surface inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl px-4 text-sm font-medium hover:border-[var(--accent)] focus-within:ring-2 focus-within:ring-[var(--ring)]";
+    "surface inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl px-4 text-sm font-medium hover:border-[var(--border-strong)] focus-within:ring-2 focus-within:ring-[var(--ring)]";
 
   return (
     <Card as="article" className="sm:p-6">
@@ -192,13 +192,13 @@ export function WrittenCapture({
           </Button>
         </div>
       ) : (
-        <p className="mt-2 text-sm text-[var(--muted)]">
+        <p className="mt-2 text-sm text-muted-foreground">
           This exam window is closed. History below is still visible.
         </p>
       )}
       {cameraOn ? (
         <div className="mt-4 space-y-3">
-          <p className="text-xs text-[var(--muted)]">
+          <p className="text-xs text-muted-foreground">
             This camera is only for photographing your written answer — not live proctoring.
           </p>
           <video
@@ -234,7 +234,7 @@ export function WrittenCapture({
           <img
             src={preview}
             alt="Preview of written answer"
-            className="max-h-72 rounded-2xl border border-[var(--border)]"
+            className="max-h-72 rounded-2xl border border-border"
           />
           {warnings.length ? (
             <ul className="space-y-1 rounded-xl bg-[var(--risk-medium-bg)] px-3 py-2 text-sm text-[var(--risk-medium-fg)]">
@@ -270,7 +270,7 @@ export function WrittenCapture({
 function HistoryList({ items }: { items: WrittenSubmission[] }) {
   if (items.length === 0) {
     return (
-      <p className="mt-4 flex items-center gap-2 text-sm text-[var(--muted)]">
+      <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
         <ScanLine className="size-4" aria-hidden />
         No scans yet. Each save is kept; nothing is overwritten.
       </p>
@@ -282,14 +282,14 @@ function HistoryList({ items }: { items: WrittenSubmission[] }) {
       <ul className="mt-2 flex gap-3 overflow-x-auto pb-2">
         {[...items].reverse().map((item, index) => (
           <li key={item.id} className="w-40 shrink-0 text-xs">
-            <p className="text-[var(--muted)]">
+            <p className="text-muted-foreground">
               {index === 0 ? "Latest" : "Earlier"} · {new Date(item.createdAt).toLocaleString()}
             </p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={item.imageUrl}
               alt={`Submitted scan from ${item.createdAt}`}
-              className="mt-1 h-28 w-full rounded-xl border border-[var(--border)] object-cover"
+              className="mt-1 h-28 w-full rounded-xl border border-border object-cover"
             />
           </li>
         ))}

@@ -35,7 +35,7 @@ export function PolicySelect({
   return (
     <div
       role="radiogroup"
-      className="inline-flex rounded-xl border border-[var(--border)] p-0.5 text-sm"
+      className="inline-flex rounded-xl border border-border p-0.5 text-sm"
     >
       {options.map((o) => (
         <button
@@ -47,8 +47,8 @@ export function PolicySelect({
           onClick={() => onChange(o.v)}
           className={`min-h-9 rounded-[10px] px-3 font-medium disabled:cursor-not-allowed ${
             value === o.v
-              ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)] shadow-[inset_0_0_0_1px_var(--accent)]"
-              : "text-[var(--muted)] hover:text-[var(--foreground)]"
+              ? "bg-muted text-foreground shadow-[inset_0_0_0_1px_var(--accent)]"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           {o.label}

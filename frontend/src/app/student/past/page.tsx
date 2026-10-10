@@ -51,7 +51,7 @@ export default function PastExamsPage() {
                 <div className="flex items-center gap-3">
                   <div>
                     <p className="font-medium">{exam.title}</p>
-                    <p className="text-sm text-[var(--muted)]">
+                    <p className="text-sm text-muted-foreground">
                       {exam.startsAt ? new Date(exam.startsAt).toLocaleString() : "—"}
                     </p>
                   </div>
