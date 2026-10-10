@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { Portal } from "@/components/ui/Portal";
 import { OctagonAlert, Video } from "lucide-react";
 import { CAMERA_TYPES } from "@/lib/student-warnings";
 import type { ViolationNotice } from "@/lib/student-warnings";
@@ -26,6 +27,7 @@ export function IntegrityViolationAlert({
       : null;
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/55 px-4 pt-24 backdrop-blur-sm">
       <div
         role="alertdialog"
@@ -54,5 +56,6 @@ export function IntegrityViolationAlert({
         </button>
       </div>
     </div>
+    </Portal>
   );
 }

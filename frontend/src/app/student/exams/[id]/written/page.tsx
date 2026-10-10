@@ -72,7 +72,7 @@ export default function WrittenExamPage() {
   const cameraLocked = Boolean(exam.policy.webcam?.required) && open && cameraStatus !== "live";
 
   return (
-    <div className="exam-room rise rounded-2xl p-4 sm:p-8">
+    <div className="rise mx-auto max-w-3xl">
       {integrity.notice ? (
         <IntegrityViolationAlert notice={integrity.notice} onDismiss={integrity.dismiss} />
       ) : null}

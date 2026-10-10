@@ -206,7 +206,7 @@ function seed(): ExamStoreData {
     startsAt: demoStart,
     durationMinutes: 30,
     assignedStudentIds: ALL_STUDENT_IDS,
-    policy: { ...demoPolicy, requireEndpointAgent: true },
+    policy: camAgent(demoPolicy),
     questionIds: demoQuestions.map((q) => q.id),
     createdAt: new Date().toISOString(),
   };
@@ -365,7 +365,7 @@ function seed(): ExamStoreData {
     startsAt: demoStart,
     durationMinutes: 35,
     assignedStudentIds: assigned,
-    policy: { ...demoPolicy, requireEndpointAgent: true },
+    policy: camAgent(demoPolicy),
     questionIds: discreteWritten.map((q) => q.id),
     createdAt,
   };
@@ -376,7 +376,7 @@ function seed(): ExamStoreData {
     startsAt: demoStart,
     durationMinutes: 40,
     assignedStudentIds: assigned,
-    policy: { ...demoPolicy, requireEndpointAgent: true },
+    policy: camAgent(demoPolicy),
     questionIds: [...dsMcq.map((q) => q.id), dsWritten.id],
     createdAt,
   };
@@ -409,6 +409,19 @@ function seed(): ExamStoreData {
     attempts: [],
     answers: [],
     submissions: [],
+  };
+}
+
+/** Agent required + webcam on, all camera rules enforced. */
+function camAgent(base: ExamSecurityPolicy): ExamSecurityPolicy {
+  return {
+    ...base,
+    requireEndpointAgent: true,
+    webcam: { ...DEFAULT_WEBCAM_POLICY },
+    cameraPresence: "enforce",
+    cameraPeople: "enforce",
+    cameraDevice: "enforce",
+    weights: { externalApp: 5 },
   };
 }
 
@@ -626,6 +639,18 @@ function extraDemoExams(
         durationMinutes: 35,
         policy: { ...strictCamAgent, allowedApps: [] },
       }),
+      make("ex-cw-dbms", "Database systems final (webcam + agent)", "mcq", dbms, {
+        durationMinutes: 30,
+        policy: strictCamAgent,
+      }),
+      make("ex-cw-aptitude", "Placement aptitude test (webcam + agent)", "mcq", aptitude, {
+        durationMinutes: 20,
+        policy: strictCamAgent,
+      }),
+      make("ex-cw-python", "Python practical (webcam + agent)", "mixed", python, {
+        durationMinutes: 40,
+        policy: { ...strictCamAgent, allowedApps: [] },
+      }),
       make("ex-demo-arch-final", "Computer architecture final (opens tomorrow)", "mcq", archFinal, {
         startsAt: tomorrow.toISOString(),
         durationMinutes: 120,
@@ -667,6 +692,9 @@ const DEMO_EXAM_IDS = new Set([
   "ex-cw-cyber",
   "ex-cw-ml",
   "ex-cw-compiler",
+  "ex-cw-dbms",
+  "ex-cw-aptitude",
+  "ex-cw-python",
 ]);
 
 /** Demo exams that should always look scheduled (not yet open). */

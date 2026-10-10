@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, Radio, Timer } from "lucide-react";
+import { CheckCircle2, Flag, Radio, Timer } from "lucide-react";
 import type { Attempt, AutoGradedQuestion, Exam } from "@exam/shared";
 import { BrowserMonitor } from "@/components/BrowserMonitor";
 import { AgentSetup } from "@/components/AgentSetup";
@@ -51,6 +51,7 @@ export default function TakeExamPage() {
   const [agentReady, setAgentReady] = useState(true);
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>("starting");
   const [eventCount, setEventCount] = useState(0);
+  const [flagged, setFlagged] = useState<Record<string, boolean>>({});
   const autoSubmitted = useRef(false);
   const integrity = useSessionIntegrityAlerts(attempt?.id ?? null);
   const agentConnected = integrity.endpointConnected;
@@ -156,9 +157,16 @@ export default function TakeExamPage() {
   const answered = questions.filter((q) => selected[q.id]?.trim()).length;
   const progress = questions.length ? Math.round((answered / questions.length) * 100) : 0;
   const lowTime = remainingMs > 0 && remainingMs < 5 * 60 * 1000;
+  const unanswered = questions.length - answered;
+  const flaggedCount = questions.filter((q) => flagged[q.id]).length;
+  const webcamRequired = Boolean(exam.policy.webcam?.required);
+
+  function toggleFlag(questionId: string) {
+    setFlagged((prev) => ({ ...prev, [questionId]: !prev[questionId] }));
+  }
 
   return (
-    <div className="exam-room rise rounded-2xl p-4 sm:p-8">
+    <div className="rise mx-auto max-w-3xl">
       {integrity.notice ? (
         <IntegrityViolationAlert notice={integrity.notice} onDismiss={integrity.dismiss} />
       ) : null}
@@ -172,7 +180,7 @@ export default function TakeExamPage() {
           onViolation={integrity.reportViolation}
         />
       ) : null}
-      {studentId && exam.policy.webcam?.required ? (
+      {studentId && webcamRequired && exam.policy.webcam ? (
         <ProctorCamera
           sessionId={attempt.id}
           examId={exam.id}
@@ -183,75 +191,88 @@ export default function TakeExamPage() {
         />
       ) : null}
 
-      <div className="z-20 border-b border-border bg-background pb-5 sm:sticky sm:top-16">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      {/* Slim sticky bar: what a student needs at a glance, nothing more. */}
+      <div className="sticky top-16 z-20 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6">
+        <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <Badge tone="low" icon={<Radio className="size-3.5" aria-hidden />}>
-              Monitor on
-            </Badge>
-            <h1 className="mt-2 truncate text-xl font-medium sm:text-2xl">{exam.title}</h1>
-            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-              {eventCount} browser {eventCount === 1 ? "event" : "events"} · Integrity score{" "}
-              {integrity.score} (for review) ·{" "}
-              {agentConnected
-                ? "Agent connected"
-                : exam.policy.requireEndpointAgent
-                  ? "Agent required"
-                  : "Agent optional"}
+            <h1 className="truncate text-lg tracking-[-0.02em] sm:text-xl">{exam.title}</h1>
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+              <span>
+                {answered} of {questions.length} answered
+              </span>
+              <span aria-hidden>·</span>
+              <span className="inline-flex items-center gap-1">
+                <CheckCircle2 className="size-3" aria-hidden />
+                Saved automatically
+              </span>
             </p>
           </div>
           <p
-            className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 font-mono text-2xl tabular-nums ${
+            className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 font-mono text-lg tabular-nums ${
               lowTime
-                ? "border-[var(--risk-high-fg)] text-[var(--risk-high-fg)]"
-                : "border-[var(--nav-active-fg)] text-foreground"
+                ? "border-[var(--risk-high-fg)]/50 bg-[var(--risk-high-bg)] text-[var(--risk-high-fg)]"
+                : "border-border bg-card"
             }`}
             aria-live="polite"
+            aria-label={`Time remaining ${formatRemaining(remainingMs)}`}
           >
-            <Timer className="size-5" aria-hidden />
+            <Timer className="size-4" aria-hidden />
             {formatRemaining(remainingMs)}
           </p>
         </div>
-        <div className="mt-4">
-          <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-            <span>
-              {answered} of {questions.length} answered
-            </span>
-            <span>{progress}%</span>
-          </div>
-          <div
-            className="h-2 overflow-hidden rounded-full bg-[var(--border)]"
-            role="progressbar"
-            aria-valuenow={progress}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Answered questions"
-          >
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <nav aria-label="Question navigator" className="mt-3 flex flex-wrap gap-1.5">
-            {questions.map((q, i) => (
+        <div
+          className="mt-3 h-1 overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-valuenow={progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Answered questions"
+        >
+          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
+        </div>
+        <nav aria-label="Question navigator" className="mt-3 flex flex-wrap gap-1.5">
+          {questions.map((q, i) => {
+            const done = Boolean(selected[q.id]?.trim());
+            return (
               <a
                 key={q.id}
                 href={`#q-${q.id}`}
-                aria-label={`Question ${i + 1}${selected[q.id]?.trim() ? ", answered" : ", unanswered"}`}
-                className={`grid size-8 place-items-center rounded-lg text-xs font-medium ${
-                  selected[q.id]?.trim()
+                aria-label={`Question ${i + 1}${done ? ", answered" : ", unanswered"}${flagged[q.id] ? ", flagged" : ""}`}
+                className={`relative grid size-8 place-items-center rounded-lg text-xs tabular-nums ${
+                  done
                     ? "bg-primary text-primary-foreground"
-                    : "border border-border text-muted-foreground hover:border-[var(--border-strong)]"
+                    : "border border-border text-muted-foreground hover:border-[var(--border-strong)] hover:text-foreground"
                 }`}
               >
                 {i + 1}
+                {flagged[q.id] ? (
+                  <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-[var(--risk-medium-fg)]" aria-hidden />
+                ) : null}
               </a>
-            ))}
-          </nav>
-        </div>
+            );
+          })}
+        </nav>
       </div>
 
-      {studentId ? (
+      {/* Monitoring status: visible, but quiet. */}
+      <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <Badge tone="low" icon={<Radio aria-hidden />}>
+          Monitoring on
+        </Badge>
+        {webcamRequired ? (
+          <Badge tone={cameraStatus === "live" ? "neutral" : "medium"}>
+            Camera {cameraStatus === "live" ? "on" : cameraStatus === "starting" ? "starting" : "off"}
+          </Badge>
+        ) : null}
+        {exam.policy.requireEndpointAgent || agentConnected ? (
+          <Badge tone={agentConnected ? "neutral" : "medium"}>Agent {agentConnected ? "connected" : "not connected"}</Badge>
+        ) : null}
+        <span>
+          {eventCount} browser {eventCount === 1 ? "event" : "events"} · integrity score {integrity.score} (for review)
+        </span>
+      </div>
+
+      {studentId && !agentConnected ? (
         <div className="mt-4">
           <AgentSetup
             examId={exam.id}
@@ -262,32 +283,43 @@ export default function TakeExamPage() {
           />
         </div>
       ) : null}
-      {writtenNote ? (
-        <p className="mt-4 text-sm text-muted-foreground">Written prompts come after these questions.</p>
-      ) : null}
 
-      {exam.policy.webcam?.required && cameraStatus !== "live" ? (
-        <p
-          role="alert"
-          className="mt-4 rounded-xl bg-[var(--risk-medium-bg)] px-4 py-3 text-sm text-[var(--risk-medium-fg)]"
-        >
+      {webcamRequired && cameraStatus !== "live" ? (
+        <p role="alert" className="mt-4 rounded-xl bg-[var(--risk-medium-bg)] px-4 py-3 text-sm text-[var(--risk-medium-fg)]">
           {cameraStatus === "starting"
             ? "Starting your camera. Answers unlock once it is on."
             : "This exam requires your webcam. Allow the camera in the address bar to continue; answers are locked until then."}
         </p>
       ) : null}
-      <ol className="mt-6 space-y-4">
+      {writtenNote ? (
+        <p className="mt-4 text-sm text-muted-foreground">Written answers are photographed after these questions.</p>
+      ) : null}
+
+      <ol className="mt-6 space-y-5">
         {questions.map((q, i) => (
-          <Card as="li" key={q.id} id={`q-${q.id}`} className="scroll-mt-48 sm:p-6">
-            <p className="text-lg font-medium leading-snug">
-              <span className="mr-2 text-foreground">{i + 1}.</span>
-              {q.prompt}
-            </p>
+          <Card as="li" key={q.id} id={`q-${q.id}`} className="scroll-mt-52 p-5 sm:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <p className="text-sm text-muted-foreground">
+                Question {i + 1} of {questions.length}
+              </p>
+              <button
+                type="button"
+                onClick={() => toggleFlag(q.id)}
+                aria-pressed={Boolean(flagged[q.id])}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs ${
+                  flagged[q.id]
+                    ? "border-[var(--risk-medium-fg)]/40 bg-[var(--risk-medium-bg)] text-[var(--risk-medium-fg)]"
+                    : "border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Flag className="size-3" aria-hidden />
+                {flagged[q.id] ? "Flagged" : "Flag for review"}
+              </button>
+            </div>
+            <p className="mt-2 text-[17px] leading-relaxed sm:text-lg">{q.prompt}</p>
             {q.kind === "short" ? (
-              <label className="mt-4 block text-sm">
-                <span className="text-muted-foreground">
-                  {q.numeric ? "Type a number" : "Type a short answer"}
-                </span>
+              <label className="mt-5 block text-sm">
+                <span className="text-muted-foreground">{q.numeric ? "Type a number" : "Type a short answer"}</span>
                 <input
                   type="text"
                   inputMode={q.numeric ? "decimal" : "text"}
@@ -300,55 +332,64 @@ export default function TakeExamPage() {
                 />
               </label>
             ) : (
-            <ul className="mt-4 space-y-2.5">
-              {q.options.map((opt) => {
-                const on = selected[q.id] === opt.id;
-                return (
-                  <li key={opt.id}>
-                    <label
-                      className={`flex min-h-12 cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-base transition-colors focus-within:ring-2 focus-within:ring-[var(--ring)] ${
-                        on
-                          ? "border-foreground bg-muted"
-                          : "border-border hover:border-[var(--border-strong)]"
-                      } ${canAnswer ? "" : "cursor-not-allowed opacity-60"}`}
-                    >
-                      <input
-                        type="radio"
-                        name={q.id}
-                        className="mt-1 size-4"
-                        checked={on}
-                        onChange={() => pick(q.id, opt.id)}
-                        disabled={!canAnswer}
-                      />
-                      <span className="flex-1">{opt.text}</span>
-                      {on ? (
-                        <CheckCircle2 className="size-5 shrink-0 text-foreground" aria-hidden />
-                      ) : null}
-                    </label>
-                  </li>
-                );
-              })}
-            </ul>
+              <ul className="mt-5 space-y-2.5">
+                {q.options.map((opt, index) => {
+                  const on = selected[q.id] === opt.id;
+                  return (
+                    <li key={opt.id}>
+                      <label
+                        className={`flex min-h-13 cursor-pointer items-center gap-3.5 rounded-xl border px-4 py-3 text-base transition-colors focus-within:ring-2 focus-within:ring-[var(--ring)] ${
+                          on ? "border-foreground bg-muted" : "border-border hover:border-[var(--border-strong)] hover:bg-muted/50"
+                        } ${canAnswer ? "" : "cursor-not-allowed opacity-60"}`}
+                      >
+                        <input
+                          type="radio"
+                          name={q.id}
+                          className="sr-only"
+                          checked={on}
+                          onChange={() => pick(q.id, opt.id)}
+                          disabled={!canAnswer}
+                        />
+                        <span
+                          aria-hidden
+                          className={`grid size-7 shrink-0 place-items-center rounded-full border text-xs font-medium ${
+                            on ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground"
+                          }`}
+                        >
+                          {String.fromCharCode(65 + index)}
+                        </span>
+                        <span className="flex-1">{opt.text}</span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </Card>
         ))}
       </ol>
 
-      <div className="mt-6 flex justify-end">
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5">
+        <p className="text-sm text-muted-foreground">
+          {unanswered === 0 ? "All questions answered." : `${unanswered} unanswered`}
+          {flaggedCount ? ` · ${flaggedCount} flagged for review` : ""}
+        </p>
         <Button size="lg" onClick={() => setConfirming(true)} disabled={!canAnswer}>
-          Submit
+          Review and submit
         </Button>
       </div>
 
       <Modal open={confirming} onClose={() => setConfirming(false)} title="Submit this attempt?">
         <p className="text-sm text-muted-foreground">
-          You cannot change answers after this. {answered} of {questions.length} questions answered.
+          {answered} of {questions.length} answered
+          {unanswered ? `, ${unanswered} left blank` : ""}
+          {flaggedCount ? `, ${flaggedCount} still flagged` : ""}. You cannot change answers after submitting.
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setConfirming(false)}>
-            Cancel
+            Keep working
           </Button>
-          <Button onClick={() => finish(attempt.id)}>Confirm submit</Button>
+          <Button onClick={() => finish(attempt.id)}>Submit</Button>
         </div>
       </Modal>
     </div>

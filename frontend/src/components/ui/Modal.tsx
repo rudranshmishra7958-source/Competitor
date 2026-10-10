@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { Portal } from "./Portal";
 
 export function Modal({
   open,
@@ -52,6 +53,7 @@ export function Modal({
 
   if (!open) return null;
   return (
+    <Portal>
     <div className="fixed inset-0 z-50 grid place-items-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden />
       <div
@@ -65,5 +67,6 @@ export function Modal({
         <div className="mt-3">{children}</div>
       </div>
     </div>
+    </Portal>
   );
 }

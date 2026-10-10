@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Portal } from "@/components/ui/Portal";
 import { GripHorizontal, Minimize2, Maximize2, VideoOff } from "lucide-react";
 import type { MonitorEvent, MonitorEventType, WebcamPolicy } from "@exam/shared";
 import { postMonitorEvent, uploadSnapshot } from "@/lib/api";
@@ -36,7 +37,16 @@ export function ProctorCamera({
   onIncident: (notice: ViolationNotice) => void;
   onStatus?: (status: CameraStatus) => void;
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  // The preview renders in a portal, so the element may appear after the stream starts.
+  const attachVideo = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node && streamRef.current && node.srcObject !== streamRef.current) {
+      node.srcObject = streamRef.current;
+      void node.play().catch(() => undefined);
+    }
+  }, []);
   const [status, setStatus] = useState<CameraStatus>("starting");
   const [faceVisible, setFaceVisible] = useState(true);
   const [minimized, setMinimized] = useState(false);
@@ -51,7 +61,6 @@ export function ProctorCamera({
 
   useEffect(() => {
     let stopped = false;
-    const videoElement = videoRef.current;
     let stream: MediaStream | null = null;
     let tick: number | null = null;
     let periodic: number | null = null;
@@ -173,11 +182,8 @@ export function ProctorCamera({
         void send("camera_blocked", { reason: "track_ended", confidence: 1 });
         warn("camera_blocked", {});
       });
-      const video = videoRef.current;
-      if (video) {
-        video.srcObject = stream;
-        await video.play().catch(() => undefined);
-      }
+      streamRef.current = stream;
+      if (videoRef.current) attachVideo(videoRef.current);
       report("live");
       void send("camera_started", { label: track.label ? "webcam" : "unknown" });
       if (looksVirtual(track.label)) {
@@ -204,9 +210,10 @@ export function ProctorCamera({
       for (const emission of rules.flush(Date.now())) void handle(emission);
       void send("camera_stopped", {});
       stream?.getTracks().forEach((t) => t.stop());
-      if (videoElement) videoElement.srcObject = null;
+      streamRef.current = null;
+      if (videoRef.current) videoRef.current.srcObject = null;
     };
-  }, [sessionId, examId, studentId, policy, debug]);
+  }, [sessionId, examId, studentId, policy, debug, attachVideo]);
 
   // Corner docking: remembered per browser, snapped after a drag.
   useEffect(() => {
@@ -217,6 +224,8 @@ export function ProctorCamera({
       /* storage unavailable */
     }
     setCorner(saved && CORNERS.includes(saved) ? saved : window.innerWidth >= 640 ? "tr" : "br");
+    // On phones start as the small pill so it never covers answer options.
+    if (window.innerWidth < 640) setMinimized(true);
     setDebug(new URLSearchParams(window.location.search).has("camdebug"));
   }, []);
 
@@ -227,9 +236,9 @@ export function ProctorCamera({
     const onScroll = () => {
       const delta = window.scrollY - last;
       last = window.scrollY;
-      setDrift(Math.max(-14, Math.min(14, -delta * 0.6)));
+      setDrift(Math.max(-28, Math.min(28, -delta * 0.9)));
       if (reset) window.clearTimeout(reset);
-      reset = window.setTimeout(() => setDrift(0), 120);
+      reset = window.setTimeout(() => setDrift(0), 180);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
@@ -281,6 +290,7 @@ export function ProctorCamera({
   }[corner];
 
   return (
+    <Portal>
     <aside
       aria-label="Your camera"
       style={{ transform: `translateY(${drift}px)` }}
@@ -289,7 +299,7 @@ export function ProctorCamera({
       } ${dragging ? "cursor-grabbing opacity-60" : "opacity-75 hover:opacity-100 focus-within:opacity-100"}`}
     >
       <div className={`relative ${compact ? "h-px overflow-hidden opacity-0" : ""}`}>
-        <video ref={videoRef} muted playsInline className="aspect-[4/3] w-full -scale-x-100 bg-black object-cover" />
+        <video ref={attachVideo} muted playsInline className="aspect-[4/3] w-full -scale-x-100 bg-black object-cover" />
         {debug && boxes.length ? (
           <svg viewBox="0 0 1 1" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 size-full -scale-x-100" aria-hidden>
             {boxes.map((box, index) => (
@@ -356,5 +366,6 @@ export function ProctorCamera({
         </button>
       </div>
     </aside>
+    </Portal>
   );
 }
